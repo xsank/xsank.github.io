@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.1">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.1">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.1">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.1" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Xsank's blog" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.1">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.1',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="背景c++正在开发一个二方包，其中依赖了thrift，但是thrift又依赖了boost,libevent，这对于用户来说是不可接受的，所以那只能自己将网络及协议部分实现一下，本片仅分析协议部分。 flume thrift协议描述文件123456789101112131415namespace java org.apache.flume.thriftstruct ThriftFlumeEvent">
+<meta name="keywords" content="源码分析,网络协议,flume,thrift">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ThriftFlume 协议分析">
+<meta property="og:url" content="xsank.com/posts/af6cb65f/index.html">
+<meta property="og:site_name" content="Xsank&#39;s blog">
+<meta property="og:description" content="背景c++正在开发一个二方包，其中依赖了thrift，但是thrift又依赖了boost,libevent，这对于用户来说是不可接受的，所以那只能自己将网络及协议部分实现一下，本片仅分析协议部分。 flume thrift协议描述文件123456789101112131415namespace java org.apache.flume.thriftstruct ThriftFlumeEvent">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="/posts/af6cb65f/thrift.png">
+<meta property="og:image" content="/posts/af6cb65f/header.png">
+<meta property="og:image" content="/posts/af6cb65f/flume-thrift.png">
+<meta property="og:updated_time" content="2019-10-07T07:57:37.991Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ThriftFlume 协议分析">
+<meta name="twitter:description" content="背景c++正在开发一个二方包，其中依赖了thrift，但是thrift又依赖了boost,libevent，这对于用户来说是不可接受的，所以那只能自己将网络及协议部分实现一下，本片仅分析协议部分。 flume thrift协议描述文件123456789101112131415namespace java org.apache.flume.thriftstruct ThriftFlumeEvent">
+<meta name="twitter:image" content="/posts/af6cb65f/thrift.png">
+  <link rel="canonical" href="xsank.com/posts/af6cb65f/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>ThriftFlume 协议分析 | Xsank's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Xsank's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-archives">
+      
+    
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a href="javascript:;" class="popup-trigger">
+        
+          <i class="fa fa-search fa-fw"></i>搜索</a>
+      </li>
+    
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xsank" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="xsank.com/posts/af6cb65f/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Xsank">
+      <meta itemprop="description" content="我一直在路上">
+      <meta itemprop="image" content="/images/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Xsank's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">ThriftFlume 协议分析
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              
+                
+              
+
+              <time title="创建时间：2017-03-18 11:38:18" itemprop="dateCreated datePublished" datetime="2017-03-18T11:38:18+08:00">2017-03-18</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-07 15:57:37" itemprop="dateModified" datetime="2019-10-07T15:57:37+08:00">2019-10-07</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/编程/" itemprop="url" rel="index"><span itemprop="name">编程</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="背景"><a class="markdownIt-Anchor" href="#背景"></a> 背景</h2><p>c++正在开发一个二方包，其中依赖了thrift，但是thrift又依赖了boost,libevent，这对于用户来说是不可接受的，所以那只能自己将网络及协议部分实现一下，本片仅分析协议部分。</p><h2 id="flume-thrift协议描述文件"><a class="markdownIt-Anchor" href="#flume-thrift协议描述文件"></a> flume thrift协议描述文件</h2><figure class="highlight thrift"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">namespace</span> java org.apache.flume.thrift</div><div class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ThriftFlumeEvent</span> </span>&#123;</div><div class="line">  <span class="number">1</span>: <span class="keyword">required</span> map &lt;<span class="keyword">string</span>, <span class="keyword">string</span>&gt; headers,</div><div class="line">  <span class="number">2</span>: <span class="keyword">required</span> <span class="built_in">binary</span> body,</div><div class="line">&#125;</div><div class="line"><span class="class"><span class="keyword">enum</span> <span class="title">Status</span> </span>&#123;</div><div class="line">  OK,</div><div class="line">  FAILED,</div><div class="line">  ERROR,</div><div class="line">  UNKNOWN</div><div class="line">&#125;</div><div class="line"><span class="class"><span class="keyword">service</span> <span class="title">ThriftSourceProtocol</span> </span>&#123;</div><div class="line">  Status append(<span class="number">1</span>: ThriftFlumeEvent event),</div><div class="line">  Status appendBatch(<span class="number">1</span>: list&lt;ThriftFlumeEvent&gt; events),</div><div class="line">&#125;</div></pre></td></tr></table></figure><a id="more"></a>
+
+
+
+<h2 id="协议发送流程"><a class="markdownIt-Anchor" href="#协议发送流程"></a> 协议发送流程</h2>
+<p><img src="/posts/af6cb65f/thrift.png" alt="screenshot.png"><br>
+我们这边flume使用的是TCompactProtocol协议，他的消息头如下：<br>
+<img src="/posts/af6cb65f/header.png" alt="screenshot.png"><br>
+具体为：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">byte PROTOCOL_ID 0x82</div><div class="line">byte VERSION_TYPE (VERSION &amp; VERSION_MASK) | ((message.type &lt;&lt; TYPE_SHIFT_AMOUNT) &amp; TYPE_MASK)</div><div class="line">varint32 MSG_SEQ_ID ++</div><div class="line">string MSG_NAME method</div></pre></td></tr></table></figure>
+<p>其中varint32 就是一个对整形数字进行压缩的算法，及对于每一个byte，用首位部分表示时候该数字还有后缀，其余部分来表示数字实体，这样对于0-127就可以用1个byte表示，128-16384用两个byte表示，依次类推。<br>
+由于少了4个bit用来表示连续状态，所以varint想要完整的表示int的范围，需要5个byte，这在数字相对比较小的情况下是非常有利的。</p>
+<p>其中由于定义了ThriftFlumeEvent数据结构，它的发送流程需要单独描述：<br>
+<img src="/posts/af6cb65f/flume-thrift.png" alt="screenshot.png"><br>
+在上图中可以清楚的看到依次处理headers及body的过程</p>
+<h2 id="代码实现"><a class="markdownIt-Anchor" href="#代码实现"></a> 代码实现</h2>
+<p>知道上面的数据及流程，就可以针对性的实现了</p>
+<h3 id="thrift支持的数据结构"><a class="markdownIt-Anchor" href="#thrift支持的数据结构"></a> thrift支持的数据结构</h3>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">byte STOP   = 0;</div><div class="line">byte BYTE   = 3;</div><div class="line">byte DOUBLE = 4;</div><div class="line">byte I16    = 6;</div><div class="line">byte I32    = 8;</div><div class="line">byte I64    = 10;</div><div class="line">byte STRING = 11;</div><div class="line">byte STRUCT = 12;</div><div class="line">byte MAP    = 13;</div><div class="line">byte SET    = 14;</div><div class="line">byte LIST   = 15;</div><div class="line">byte ENUM   = 16;</div></pre></td></tr></table></figure>
+<p>我们必须实现的类型：<br>
+<code>byte</code>,<code>int32</code>,<code>map</code>,<code>string</code>,<code>list</code>,<code>struct</code></p>
+<h3 id="必须实现的逻辑方法"><a class="markdownIt-Anchor" href="#必须实现的逻辑方法"></a> 必须实现的逻辑方法</h3>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="comment">//写部分</span></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeMessageBegin</span><span class="params">(TMessage message)</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeStructBegin</span><span class="params">(TStruct struct)</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeStructEnd</span><span class="params">()</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeFieldBegin</span><span class="params">(TField field)</span></span>;</div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeFieldBeginInternal</span><span class="params">(TField field, <span class="keyword">byte</span> typeOverride)</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeFieldStop</span><span class="params">()</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeMapBegin</span><span class="params">(TMap map)</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeListBegin</span><span class="params">(TList list)</span></span>;</div><div class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">writeCollectionBegin</span><span class="params">(<span class="keyword">byte</span> elemType, <span class="keyword">int</span> size)</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeMessageEnd</span><span class="params">()</span> </span>&#123;&#125;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeMapEnd</span><span class="params">()</span> </span>&#123;&#125;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeListEnd</span><span class="params">()</span> </span>&#123;&#125;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeSetEnd</span><span class="params">()</span> </span>&#123;&#125;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeFieldEnd</span><span class="params">()</span> </span>&#123;&#125;</div><div class="line"></div><div class="line"><span class="comment">//读部分</span></div><div class="line"><span class="function"><span class="keyword">public</span> TMessage <span class="title">readMessageBegin</span><span class="params">()</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> TStruct <span class="title">readStructBegin</span><span class="params">()</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> TField <span class="title">readFieldBegin</span><span class="params">()</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> TMap <span class="title">readMapBegin</span><span class="params">()</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> TList <span class="title">readListBegin</span><span class="params">()</span></span>;</div></pre></td></tr></table></figure>
+<h3 id="必须实现的基础方法"><a class="markdownIt-Anchor" href="#必须实现的基础方法"></a> 必须实现的基础方法</h3>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="comment">//写部分</span></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeByte</span><span class="params">(<span class="keyword">byte</span> b)</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeI16</span><span class="params">(<span class="keyword">short</span> i16)</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeString</span><span class="params">(String str)</span></span>;</div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writeBinary</span><span class="params">(ByteBuffer bin)</span></span>;</div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeBinary</span><span class="params">(<span class="keyword">byte</span>[] buf, <span class="keyword">int</span> offset, <span class="keyword">int</span> length)</span></span>;</div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeVarint32</span><span class="params">(<span class="keyword">int</span> n)</span></span>;</div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">intToZigZag</span><span class="params">(<span class="keyword">int</span> n)</span></span>;</div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeByteDirect</span><span class="params">(<span class="keyword">byte</span> b)</span></span>;</div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeByteDirect</span><span class="params">(<span class="keyword">int</span> n)</span></span>;</div><div class="line"></div><div class="line"><span class="comment">//读部分</span></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">byte</span> <span class="title">readByte</span><span class="params">()</span>；</span></div><div class="line"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">readVarint32</span><span class="params">()</span>；</div><div class="line"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">readString</span><span class="params">()</span>;</div></pre></td></tr></table></figure>
+<p>这里我们发现出现了一个writeI16，为什么不是varint16呢？这是因为TField类型允许id为负数，之前有介绍varint32算法，但是对于负数怎么处理呢？就是上面必须实现的另一个方法，intToZigZag，代码实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">intToZigZag</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</div><div class="line">    <span class="keyword">return</span> (n &lt;&lt; <span class="number">1</span>) ^ (n &gt;&gt; <span class="number">31</span>);</div><div class="line">  &#125;</div></pre></td></tr></table></figure>
+<p>及将它转化成正数，这样varint算法就通用了</p>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<p>至此我们分析了flume 中使用thrift的协议的完整流程及相关方法，剩下的就是根据thrift库文件的实现，按需照搬过来就可以接触thrift的依赖了</p>
+
+    </div>
+
+    
+    
+    
+        
+      
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Xsank</li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="/xsank.com/posts/af6cb65f/" title="ThriftFlume 协议分析">xsank.com/posts/af6cb65f/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！</li>
+</ul>
+</div>
+
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/源码分析/" rel="tag"># 源码分析</a>
+            
+              <a href="/tags/网络协议/" rel="tag"># 网络协议</a>
+            
+              <a href="/tags/flume/" rel="tag"># flume</a>
+            
+              <a href="/tags/thrift/" rel="tag"># thrift</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/posts/978b3431/" rel="next" title="mysql主从同步分析">
+                  <i class="fa fa-chevron-left"></i> mysql主从同步分析
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/posts/4433775e/" rel="prev" title="java自带序列化注意点">
+                  java自带序列化注意点 <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+    <div class="comments" id="gitalk-container"></div>
+  
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text"> 背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#flume-thrift协议描述文件"><span class="nav-number">2.</span> <span class="nav-text"> flume thrift协议描述文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#协议发送流程"><span class="nav-number">3.</span> <span class="nav-text"> 协议发送流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码实现"><span class="nav-number">4.</span> <span class="nav-text"> 代码实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#thrift支持的数据结构"><span class="nav-number">4.1.</span> <span class="nav-text"> thrift支持的数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#必须实现的逻辑方法"><span class="nav-number">4.2.</span> <span class="nav-text"> 必须实现的逻辑方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#必须实现的基础方法"><span class="nav-number">4.3.</span> <span class="nav-text"> 必须实现的基础方法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text"> 总结</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image"
+      src="/images/avatar.png"
+      alt="Xsank">
+  <p class="site-author-name" itemprop="name">Xsank</p>
+  <div class="site-description" itemprop="description">我一直在路上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span>
+        </a>
+      </div>
+    
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+      
+      
+        
+      
+      
+        
+      
+        <a href="https://github.com/xsanko" title="GitHub &rarr; https://github.com/xsanko" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+    
+      <span class="links-of-author-item">
+      
+      
+        
+      
+      
+        
+      
+        <a href="https://www.zhihu.com/people/xsank-mar/activities" title="知乎 &rarr; https://www.zhihu.com/people/xsank-mar/activities" rel="noopener" target="_blank"><i class="fa fa-fw fa-spinner"></i>知乎</a>
+      </span>
+    
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    
+  
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Xsank</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.1</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.1"></script><script src="/js/motion.js?v=7.4.1"></script>
+<script src="/js/schemes/pisces.js?v=7.4.1"></script>
+
+<script src="/js/next-boot.js?v=7.4.1"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+  <script src="/js/local-search.js?v=7.4.1"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID: 'c59fe7245af96ae675fa',
+      clientSecret: '397d8b47a57adf6877c9985e7a21a40c01927e80',
+      repo: 'xsank.github.io',
+      owner: 'xsank',
+      admin: ['xsank'],
+      id: 'a7401e55c095d7435497a7e860e6e3fa',
+        language: 'zh-CN',
+      
+      distractionFreeMode: 'true'
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+</script>
+
+</body>
+</html>

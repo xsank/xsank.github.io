@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Xsank&#39;s blog</title>
+  
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="xsank.com/"/>
+  <updated>2019-10-07T06:59:15.402Z</updated>
+  <id>xsank.com/</id>
+  
+  <author>
+    <name>Xsank</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>java多线程案例分析</title>
+    <link href="xsank.com/posts/c8c89711/"/>
+    <id>xsank.com/posts/c8c89711/</id>
+    <published>2017-03-19T10:31:06.000Z</published>
+    <updated>2019-10-07T06:59:15.402Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;开题&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#开题&quot;&gt;&lt;/a&gt; 开题&lt;/h2&gt;&lt;p&gt;设定有如下需求：&lt;br&gt;
+现要从&lt;code&gt;hbase&lt;/code&gt;中导出2016年整年的，大约&lt;code&gt;10w&lt;/code&gt;只股票行情数据，数据总量约&lt;code&gt;100t&lt;/code&gt;&lt;br&gt;
+导出成如下格式：&lt;/p&gt;&lt;pre&gt;&lt;code&gt;2016-01-01/facebook.txt linkedin.txt amazon.txt google.txt...
+...
+2016-12-31/facebook.txt linkedin.txt amazon.txt google.txt...
+&lt;/code&gt;&lt;/pre&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="java" scheme="xsank.com/tags/java/"/>
+    
+      <category term="经验" scheme="xsank.com/tags/%E7%BB%8F%E9%AA%8C/"/>
+    
+      <category term="多线程" scheme="xsank.com/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>java自带序列化注意点</title>
+    <link href="xsank.com/posts/4433775e/"/>
+    <id>xsank.com/posts/4433775e/</id>
+    <published>2017-03-19T08:27:05.000Z</published>
+    <updated>2019-10-07T06:49:22.532Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;开题&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#开题&quot;&gt;&lt;/a&gt; 开题&lt;/h2&gt;&lt;p&gt;大家都知道java使用自带的序列化的时候对象需要实现&lt;code&gt;Serializable&lt;/code&gt;接口，然后根据你业务需求，决定是否要自定义&lt;code&gt;readObject&lt;/code&gt;和&lt;code&gt;writeObject&lt;/code&gt;，其中其实会有一个类属性&lt;code&gt;serialVersionUID&lt;/code&gt;，你可以不写，序列化后系统会给你生成好，在反序列化的时候比对校验，都建议说最好给每个序列化类配上一个固定的，那么如果没配呢？&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="java" scheme="xsank.com/tags/java/"/>
+    
+      <category term="经验" scheme="xsank.com/tags/%E7%BB%8F%E9%AA%8C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ThriftFlume 协议分析</title>
+    <link href="xsank.com/posts/af6cb65f/"/>
+    <id>xsank.com/posts/af6cb65f/</id>
+    <published>2017-03-18T03:38:18.000Z</published>
+    <updated>2019-10-07T07:57:37.991Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;背景&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#背景&quot;&gt;&lt;/a&gt; 背景&lt;/h2&gt;&lt;p&gt;c++正在开发一个二方包，其中依赖了thrift，但是thrift又依赖了boost,libevent，这对于用户来说是不可接受的，所以那只能自己将网络及协议部分实现一下，本片仅分析协议部分。&lt;/p&gt;&lt;h2 id=&quot;flume-thrift协议描述文件&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#flume-thrift协议描述文件&quot;&gt;&lt;/a&gt; flume thrift协议描述文件&lt;/h2&gt;&lt;figure class=&quot;highlight thrift&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;3&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;4&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;5&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;6&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;7&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;8&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;9&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;10&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;11&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;12&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;13&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;14&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;15&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;namespace&lt;/span&gt; java org.apache.flume.thrift&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;ThriftFlumeEvent&lt;/span&gt; &lt;/span&gt;&amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  &lt;span class=&quot;number&quot;&gt;1&lt;/span&gt;: &lt;span class=&quot;keyword&quot;&gt;required&lt;/span&gt; map &amp;lt;&lt;span class=&quot;keyword&quot;&gt;string&lt;/span&gt;, &lt;span class=&quot;keyword&quot;&gt;string&lt;/span&gt;&amp;gt; headers,&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  &lt;span class=&quot;number&quot;&gt;2&lt;/span&gt;: &lt;span class=&quot;keyword&quot;&gt;required&lt;/span&gt; &lt;span class=&quot;built_in&quot;&gt;binary&lt;/span&gt; body,&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&amp;#125;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;Status&lt;/span&gt; &lt;/span&gt;&amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  OK,&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  FAILED,&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  ERROR,&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  UNKNOWN&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&amp;#125;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;service&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;ThriftSourceProtocol&lt;/span&gt; &lt;/span&gt;&amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  Status append(&lt;span class=&quot;number&quot;&gt;1&lt;/span&gt;: ThriftFlumeEvent event),&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  Status appendBatch(&lt;span class=&quot;number&quot;&gt;1&lt;/span&gt;: list&amp;lt;ThriftFlumeEvent&amp;gt; events),&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&amp;#125;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="源码分析" scheme="xsank.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/"/>
+    
+      <category term="网络协议" scheme="xsank.com/tags/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/"/>
+    
+      <category term="flume" scheme="xsank.com/tags/flume/"/>
+    
+      <category term="thrift" scheme="xsank.com/tags/thrift/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>mysql主从同步分析</title>
+    <link href="xsank.com/posts/978b3431/"/>
+    <id>xsank.com/posts/978b3431/</id>
+    <published>2017-03-18T03:14:41.000Z</published>
+    <updated>2019-10-07T07:55:05.709Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;工作中由于临时有个数据库数据同步的需求，上海+深圳同步，更多的是保证数据一致，tps和qps都很低。于是简单配置一个主从同步是一个稳妥的方案&lt;/p&gt;&lt;h2 id=&quot;配置步骤&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#配置步骤&quot;&gt;&lt;/a&gt; 配置步骤&lt;/h2&gt;&lt;ol&gt;
+&lt;li&gt;修改&lt;code&gt;my.cnf&lt;/code&gt;，一定要开启&lt;code&gt;binlog&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;master配置同步账号&lt;/li&gt;
+&lt;li&gt;master调用&lt;code&gt;show master status \G&lt;/code&gt;命令，记录binlog及position&lt;/li&gt;
+&lt;li&gt;slave设置读取master的binlog及position，&lt;code&gt;start slave&lt;/code&gt;，通过调用&lt;code&gt;show slave status \G&lt;/code&gt;，观察配置结果&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="数据库" scheme="xsank.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+      <category term="mysql" scheme="xsank.com/tags/mysql/"/>
+    
+      <category term="运维" scheme="xsank.com/tags/%E8%BF%90%E7%BB%B4/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>简单事务代码实现</title>
+    <link href="xsank.com/posts/f6217665/"/>
+    <id>xsank.com/posts/f6217665/</id>
+    <published>2017-01-22T08:56:11.000Z</published>
+    <updated>2019-10-07T08:07:55.061Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;开题&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#开题&quot;&gt;&lt;/a&gt; 开题&lt;/h2&gt;&lt;p&gt;很多情况下会要求事务的特性支持，比如数据库操作，比如消息处理&lt;br&gt;
+好在代码上如果需要处理事物的话其实还比较简单&lt;/p&gt;&lt;h2 id=&quot;代码&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#代码&quot;&gt;&lt;/a&gt; 代码&lt;/h2&gt;&lt;h3 id=&quot;提取接口&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#提取接口&quot;&gt;&lt;/a&gt; 提取接口&lt;/h3&gt;&lt;p&gt;事务常见的用法即：&lt;code&gt;begin&lt;/code&gt;,&lt;code&gt;commit&lt;/code&gt;,&lt;code&gt;rollback&lt;/code&gt;,&lt;code&gt;close&lt;/code&gt;，那么就提取这样的接口出来：&lt;/p&gt;&lt;figure class=&quot;highlight java&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;3&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;4&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;5&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;6&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;7&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;8&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;9&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;Transaction&lt;/span&gt; &lt;/span&gt;&amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;begin&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt;&lt;/span&gt;;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;commit&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt;&lt;/span&gt;;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;rollback&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt;&lt;/span&gt;;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt;&lt;/span&gt;;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&amp;#125;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="小技巧" scheme="xsank.com/tags/%E5%B0%8F%E6%8A%80%E5%B7%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>程序员的几种状态，你落在哪儿？</title>
+    <link href="xsank.com/posts/98844f7a/"/>
+    <id>xsank.com/posts/98844f7a/</id>
+    <published>2017-01-22T03:28:11.000Z</published>
+    <updated>2019-10-07T06:58:13.364Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;引子&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#引子&quot;&gt;&lt;/a&gt; 引子&lt;/h2&gt;&lt;p&gt;不知不觉已经工作3年多，看看刚校招进来的94小鲜肉，不禁感叹：自己真的老了&lt;br&gt;
+在工作的这些日子，自己经历了好几种状态，简单来说有以下几种&lt;/p&gt;&lt;h2 id=&quot;状态统计&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#状态统计&quot;&gt;&lt;/a&gt; 状态统计&lt;/h2&gt;&lt;h3 id=&quot;学习阶段&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#学习阶段&quot;&gt;&lt;/a&gt; 学习阶段&lt;/h3&gt;&lt;p&gt;刚进入一个新的环境，对于一切都感到很好奇，无论给了你什么任务你都心甘情愿的接收并且干的津津有味，虽然这很可能是别人一点都不愿意干的活儿，但对于自己而言，无疑是收获满满的。&lt;br&gt;
+毫无疑问，这是新环境的学习阶段，这个阶段往往是最累的，但恰恰是你收回最快的阶段，如果熬过去，你会发现你真的学到了很多东西。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="思绪" scheme="xsank.com/categories/%E6%80%9D%E7%BB%AA/"/>
+    
+    
+      <category term="随笔" scheme="xsank.com/tags/%E9%9A%8F%E7%AC%94/"/>
+    
+      <category term="感想" scheme="xsank.com/tags/%E6%84%9F%E6%83%B3/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>如果你也不想用flume-client</title>
+    <link href="xsank.com/posts/df1eb6a9/"/>
+    <id>xsank.com/posts/df1eb6a9/</id>
+    <published>2017-01-08T04:49:45.000Z</published>
+    <updated>2019-10-07T06:58:34.484Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;开题&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#开题&quot;&gt;&lt;/a&gt; 开题&lt;/h2&gt;&lt;p&gt;工作中遇到了一种场景，需要使用多语言版本客户端，而其中&lt;code&gt;java&lt;/code&gt;的版本使用到了&lt;code&gt;flume&lt;/code&gt;的二方包，考虑到其他语言开发的便捷性，准备移除&lt;code&gt;flume&lt;/code&gt;二方包依赖&lt;/p&gt;&lt;h2 id=&quot;改造&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#改造&quot;&gt;&lt;/a&gt; 改造&lt;/h2&gt;&lt;p&gt;其实很多场景下使用&lt;code&gt;flume&lt;/code&gt;二方包仅仅是为了连接&lt;code&gt;flume&lt;/code&gt;并且往里面灌点数据，没有太多复杂的用法，那么需要解决的核心问题就是通信了。&lt;/p&gt;&lt;p&gt;要支持多语言，有很多方案可以选择：&lt;code&gt;json&lt;/code&gt;，&lt;code&gt;xml&lt;/code&gt;，&lt;code&gt;protobuf&lt;/code&gt;，&lt;code&gt;thrift&lt;/code&gt;等。考虑到性能及易用，这里使用的是&lt;code&gt;thrift&lt;/code&gt;。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="flume" scheme="xsank.com/tags/flume/"/>
+    
+      <category term="二方包" scheme="xsank.com/tags/%E4%BA%8C%E6%96%B9%E5%8C%85/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>hadoop-metrics2源码分析</title>
+    <link href="xsank.com/posts/408b7a09/"/>
+    <id>xsank.com/posts/408b7a09/</id>
+    <published>2017-01-08T04:35:08.000Z</published>
+    <updated>2019-10-07T06:55:41.429Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;开题&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#开题&quot;&gt;&lt;/a&gt; 开题&lt;/h2&gt;&lt;p&gt;&lt;code&gt;hadoop-metrics2&lt;/code&gt;其实是&lt;code&gt;hadoop-common&lt;/code&gt;工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码&lt;/p&gt;&lt;h2 id=&quot;代码分析&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#代码分析&quot;&gt;&lt;/a&gt; 代码分析&lt;/h2&gt;&lt;p&gt;&lt;code&gt;hadoop-metrics2&lt;/code&gt;的整个流程都被封装到了&lt;code&gt;MetricsSystem&lt;/code&gt;中，随着这个类的启动，配置初始化-&amp;gt;metrics生成-&amp;gt;metrics投递的整个链路就串通了。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="源码分析" scheme="xsank.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/"/>
+    
+      <category term="hadoop-metrics2" scheme="xsank.com/tags/hadoop-metrics2/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Html在线xpath测试小工具</title>
+    <link href="xsank.com/posts/40a6ed4c/"/>
+    <id>xsank.com/posts/40a6ed4c/</id>
+    <published>2017-01-02T02:25:00.000Z</published>
+    <updated>2019-10-07T06:49:59.451Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;开题&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#开题&quot;&gt;&lt;/a&gt; 开题&lt;/h2&gt;&lt;p&gt;3年前写爬虫的时候还是用的正则，而且都是用原生的库。最近貌似爬虫相关的文章比较多，于是我也想弄点资料玩一玩了。简单看了下&lt;code&gt;scrapy&lt;/code&gt;的使用，发现用了&lt;code&gt;xpath&lt;/code&gt;来定位爬取数据，确实比正则要简介方便。&lt;br&gt;
+但是在我进行页面分析的时候，发现网上居然没有xpath在线测试的工具，json格式化，正则测试，unix时间戳什么的倒是不少，于是花了一点时间做了一个很简单的网页版xpath在线测试，这样在对html进行分析的时候就方便多了。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="开源项目" scheme="xsank.com/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/"/>
+    
+      <category term="小工具" scheme="xsank.com/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>2016-回顾总结</title>
+    <link href="xsank.com/posts/b6b7d7d/"/>
+    <id>xsank.com/posts/b6b7d7d/</id>
+    <published>2016-12-31T10:00:58.000Z</published>
+    <updated>2019-10-07T06:45:31.404Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;2015年12月10日，入职阿里，不知不觉又过了一个春秋，无论是欢笑还是痛苦，都将成为满满的回忆&lt;/p&gt;&lt;hr&gt;&lt;h2 id=&quot;工作&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#工作&quot;&gt;&lt;/a&gt; 工作&lt;/h2&gt;&lt;p&gt;来阿里这一年应该是我工作这三年中收获最大的一年，真切的觉得自己的眼界开阔了。&lt;/p&gt;&lt;h3 id=&quot;1技能&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#1技能&quot;&gt;&lt;/a&gt; 1.技能&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;学习掌握了各种中间件，如：&lt;code&gt;精卫&lt;/code&gt;，&lt;code&gt;metaq&lt;/code&gt;，&lt;code&gt;diamond&lt;/code&gt;，&lt;code&gt;hsf&lt;/code&gt;，&lt;code&gt;TDDL&lt;/code&gt;，&lt;code&gt;eagleeye&lt;/code&gt;等，其中部分中间件做了深入了解，明白了一个中间件应该在何种场景下使用，使用上应该注意什么问题&lt;/li&gt;
+&lt;li&gt;了解了各种平台，如：&lt;code&gt;BCP&lt;/code&gt;，&lt;code&gt;全链路压测&lt;/code&gt;，&lt;code&gt;宙斯&lt;/code&gt;，&lt;code&gt;aone&lt;/code&gt;，&lt;code&gt;GOC&lt;/code&gt;，&lt;code&gt;xflush&lt;/code&gt;，&lt;code&gt;armory&lt;/code&gt;等，从底层的机房管理到上层软件的开发测试发布，阿里有自己的一套体系，并且正是这套体系维持着阿里现有生态环境。&lt;/li&gt;
+&lt;li&gt;深入学习了&lt;code&gt;solr&lt;/code&gt;+&lt;code&gt;lucene&lt;/code&gt;，在进阿里之前面试官&lt;code&gt;君山&lt;/code&gt;问我想做技术还是想做业务，我当然说搞技术了，没想到进来是搞搜索，而且一搞就是一年。由于是老业务，所以更多的精力放在了维护上，不过也因此深入的体会到了一个分布式系统应该注意的问题，也深入的体会到了一个数据型业务应该注意的问题。&lt;br&gt;
+工作之余的研究学习使得我进一步掌握了&lt;code&gt;solr&lt;/code&gt;的实现细节，明白了一个真正的搜索系统应该拥有哪些周边环节，仅仅靠&lt;code&gt;lucene&lt;/code&gt;是不够的，仅仅拿来使用也是不够的，如果有定制化需求，你得知道怎么改才更符合公司的业务需求。&lt;/li&gt;
+&lt;li&gt;了解了阿里的&lt;code&gt;docker&lt;/code&gt;化体系。由于此前在云计算公司待过，做过类似&lt;code&gt;swarm&lt;/code&gt;的管理工具，所以上手很容易。加上作为业务平台部门的docker专项负责人，推进了各个部门的docker化，从架构上明白了公司对于docker化的运用。&lt;/li&gt;
+&lt;li&gt;参加了双十一，这个也算技能的原因是此前一直不知道双十一如此巨大的&lt;code&gt;qps+tps&lt;/code&gt;到底应该怎么做，现在心里有杆秤了，不会再觉得那么虚无缥缈高不可攀了。&lt;/li&gt;
+&lt;/ul&gt;
+    
+    </summary>
+    
+    
+      <category term="思绪" scheme="xsank.com/categories/%E6%80%9D%E7%BB%AA/"/>
+    
+    
+      <category term="随笔" scheme="xsank.com/tags/%E9%9A%8F%E7%AC%94/"/>
+    
+      <category term="感想" scheme="xsank.com/tags/%E6%84%9F%E6%83%B3/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>I&#39;m back!</title>
+    <link href="xsank.com/posts/6adf81ae/"/>
+    <id>xsank.com/posts/6adf81ae/</id>
+    <published>2016-12-31T08:45:49.000Z</published>
+    <updated>2019-10-07T07:47:19.915Z</updated>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;&lt;img src=&quot;/posts/6adf81ae/i_am_back.jpg&quot; alt=&quot;I-am-back&quot;&gt;&lt;br&gt;
+由于&lt;code&gt;sae&lt;/code&gt;停止为开发者提供免费金币，经过一段时间付费发现原有博客那丢丢流量还是挺费钱的，所以干脆用&lt;code&gt;github&lt;
+      
+    
+    </summary>
+    
+    
+    
+      <category term="随笔" scheme="xsank.com/tags/%E9%9A%8F%E7%AC%94/"/>
+    
+      <category term="冒泡" scheme="xsank.com/tags/%E5%86%92%E6%B3%A1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>EasyProxy之golang初步学习</title>
+    <link href="xsank.com/posts/3aeff3cd/"/>
+    <id>xsank.com/posts/3aeff3cd/</id>
+    <published>2016-12-31T08:18:26.000Z</published>
+    <updated>2019-10-07T07:09:26.208Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近工作中遇到了&lt;code&gt;golang&lt;/code&gt;的项目，稍稍对其产生了点兴趣，打算认真学习下，正巧在搭建&lt;code&gt;mysql&lt;/code&gt;主备环境的时候发现如果用一个代理程序的话自己测试会方便很多（主要还是为了造轮子），于是这个基于golang的&lt;code&gt;tcp proxy&lt;/code&gt;项目就产生了&lt;/p&gt;&lt;h2 id=&quot;需求&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#需求&quot;&gt;&lt;/a&gt; 需求&lt;/h2&gt;&lt;ol&gt;
+&lt;li&gt;由于是为了学习golang，所以要在实现代理基础功能的前提下尽可能的用到golang的各种基础知识&lt;/li&gt;
+&lt;li&gt;不可能真单纯的为了玩，学一个东西除了为充实大脑，更为了能有实际用途，所以有必要工程化&lt;/li&gt;
+&lt;li&gt;程序不要太繁杂，毕竟这是我的第一个&lt;code&gt;golang&lt;/code&gt;工程，来日方长&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+    
+      <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
+    
+    
+      <category term="编程" scheme="xsank.com/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+      <category term="开源项目" scheme="xsank.com/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/"/>
+    
+  </entry>
+  
+</feed>

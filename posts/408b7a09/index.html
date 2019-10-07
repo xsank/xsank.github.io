@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.1">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.1">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.1">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.1" color="#222">
+  <link rel="alternate" href="/atom.xml" title="Xsank's blog" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.1">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.1',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="开题hadoop-metrics2其实是hadoop-common工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码 代码分析hadoop-metrics2的整个流程都被封装到了MetricsSystem中，随着这个类的启动，配置初始化-&amp;gt;metrics生成-&amp;gt;metrics投递的整个链路就串通了。">
+<meta name="keywords" content="源码分析,hadoop-metrics2">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hadoop-metrics2源码分析">
+<meta property="og:url" content="xsank.com/posts/408b7a09/index.html">
+<meta property="og:site_name" content="Xsank&#39;s blog">
+<meta property="og:description" content="开题hadoop-metrics2其实是hadoop-common工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码 代码分析hadoop-metrics2的整个流程都被封装到了MetricsSystem中，随着这个类的启动，配置初始化-&amp;gt;metrics生成-&amp;gt;metrics投递的整个链路就串通了。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-10-07T06:55:41.429Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="hadoop-metrics2源码分析">
+<meta name="twitter:description" content="开题hadoop-metrics2其实是hadoop-common工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码 代码分析hadoop-metrics2的整个流程都被封装到了MetricsSystem中，随着这个类的启动，配置初始化-&amp;gt;metrics生成-&amp;gt;metrics投递的整个链路就串通了。">
+  <link rel="canonical" href="xsank.com/posts/408b7a09/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>hadoop-metrics2源码分析 | Xsank's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Xsank's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-archives">
+      
+    
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a href="javascript:;" class="popup-trigger">
+        
+          <i class="fa fa-search fa-fw"></i>搜索</a>
+      </li>
+    
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/xsank" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="xsank.com/posts/408b7a09/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Xsank">
+      <meta itemprop="description" content="我一直在路上">
+      <meta itemprop="image" content="/images/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Xsank's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">hadoop-metrics2源码分析
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              
+                
+              
+
+              <time title="创建时间：2017-01-08 12:35:08" itemprop="dateCreated datePublished" datetime="2017-01-08T12:35:08+08:00">2017-01-08</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2019-10-07 14:55:41" itemprop="dateModified" datetime="2019-10-07T14:55:41+08:00">2019-10-07</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/编程/" itemprop="url" rel="index"><span itemprop="name">编程</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="开题"><a class="markdownIt-Anchor" href="#开题"></a> 开题</h2><p><code>hadoop-metrics2</code>其实是<code>hadoop-common</code>工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码</p><h2 id="代码分析"><a class="markdownIt-Anchor" href="#代码分析"></a> 代码分析</h2><p><code>hadoop-metrics2</code>的整个流程都被封装到了<code>MetricsSystem</code>中，随着这个类的启动，配置初始化-&gt;metrics生成-&gt;metrics投递的整个链路就串通了。</p><a id="more"></a>
+
+
+
+<h3 id="配置初始化"><a class="markdownIt-Anchor" href="#配置初始化"></a> 配置初始化</h3>
+<p><code>hadoop-metrics2</code>自己定义了一种配置，名字开头必须为<code>hadoop-metrics2</code>，可以自定义尾缀，其中主要完成了<code>MetricsSource</code>和<code>MetricsSink</code>的一些配置，其中对<code>MetricsSink</code>有非常重的依赖，由于<code>hadoop-metrics2</code>将<code>MetricsSink</code>实现了插件化，而这种插件化是通过<code>SubsetConfiguration</code>完成初始化，所以这部分感觉使用起来并不是很灵活。<br>
+在<code>MetricsSystem</code>正式启动之前，会先通过<code>configure</code>的调用完成配置加载及初始化</p>
+<h3 id="metrics生成"><a class="markdownIt-Anchor" href="#metrics生成"></a> metrics生成</h3>
+<p>所有被<code>hadoop-metrics2</code>管理的数据源必须实现<code>MetricsSource</code>接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">MetricsSource</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">getMetrics</span><span class="params">(MetricsCollector var1, <span class="keyword">boolean</span> var2)</span></span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>实现好接口之后，你需要将其<code>register</code>到<code>MetricsSystem</code>中，之后它会对<code>MetricsSource</code>进行简单的包装并管理起来<br>
+，<code>MetricsSystem</code>启动之后会启动一个<code>Timer</code>定时器来周期性执行<code>Metircs</code>的流转，并且<code>MetricsSystem</code>中生成的<code>MetricsCollector</code>对象，会在各个<code>MetricsSource</code>之间传递。<br>
+由于之前注册过了<code>MetricsSource</code>，你的数据源就会在这时候被调用处理。<br>
+你可以在有数据变动的时候利用<code>MetricsCollector</code>来构造<code>MetricsRecordBuilder</code>并添加数据<br>
+这里再说一下<code>MutableMetric</code>和<code>MetricsRegistry</code>。<br>
+<code>MetricsRegistry</code>用来管理<code>hadoop-metrics2</code>的几种基本类型的<code>Metircs</code>，如：<code>Gauge</code>，<code>Couter</code>，<code>Stat</code>等，并且这些<code>Metircs</code>都继承自<code>MutableMetric</code>。<br>
+作为抽象父类的<code>MutableMetric</code>的方法<code>snapshot</code>很特别，他返回的是上一次的快照，并通过<code>changed</code>来判定是否发生数据变化，这样只需要在数据变动的时候投递<code>Metrics</code>，抽象类代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">MutableMetric</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">boolean</span> changed = <span class="keyword">true</span>;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">snapshot</span><span class="params">(MetricsRecordBuilder var1, <span class="keyword">boolean</span> var2)</span></span>;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">snapshot</span><span class="params">(MetricsRecordBuilder builder)</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.snapshot(builder, <span class="keyword">false</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">setChanged</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.changed = <span class="keyword">true</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">clearChanged</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.changed = <span class="keyword">false</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">changed</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.changed;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="metrics投递"><a class="markdownIt-Anchor" href="#metrics投递"></a> metrics投递</h3>
+<p>在前面完成<code>Metrics</code>生成之后，<code>MetricsSystem</code>会调用<code>publishMetrics</code>方法来完成数据投递。<br>
+这里<code>hadoop-metrics2</code>还做了点特别的工作。<br>
+一开始在完成配置加载后，<code>MetricsSystem</code>对<code>MetricsSink</code>进行了包装，生成了<code>MetricsSinkAdapter</code>，这里主要是为了增加对<code>Metrics</code>的吞吐量的管理。<br>
+每一个<code>MetricsSinkAdapter</code>内部都有一个<code>SinkQueue</code>用于数据缓冲并添加了重试逻辑。<br>
+由于之前添加的Sink都实现了<code>MetricsSink</code>接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">MetricsSink</span> <span class="keyword">extends</span> <span class="title">MetricsPlugin</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">putMetrics</span><span class="params">(MetricsRecord var1)</span></span>;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">flush</span><span class="params">()</span></span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>在具体实现的<code>putMetrics</code>中你可以完成数据的具体操作，写文件也好，写DB也好，消息队列也好</p>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<p><code>hadoop-metrics2</code>总体的设计思路很简洁，但是由于和<code>hadoop-common</code>绑定太死，会很笨重，尤其在包冲突问题上表现明显。<br>
+另外作为一个二方包，仅仅作为数据投递，感觉设计的还是略微繁琐切易用性不够。<br>
+考虑到<code>hadoop-metrics2</code>更多是为<code>hadoop</code>社区服务，可能初衷就没考虑通用性，加上其逻辑并不复杂，完全可以参考思路自己实现一套轻量的<code>Metrics</code>二方包。<br>
+这才是合理的造轮子。</p>
+
+    </div>
+
+    
+    
+    
+        
+      
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Xsank</li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="/xsank.com/posts/408b7a09/" title="hadoop-metrics2源码分析">xsank.com/posts/408b7a09/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！</li>
+</ul>
+</div>
+
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/源码分析/" rel="tag"># 源码分析</a>
+            
+              <a href="/tags/hadoop-metrics2/" rel="tag"># hadoop-metrics2</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/posts/40a6ed4c/" rel="next" title="Html在线xpath测试小工具">
+                  <i class="fa fa-chevron-left"></i> Html在线xpath测试小工具
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/posts/df1eb6a9/" rel="prev" title="如果你也不想用flume-client">
+                  如果你也不想用flume-client <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+    <div class="comments" id="gitalk-container"></div>
+  
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#开题"><span class="nav-number">1.</span> <span class="nav-text"> 开题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码分析"><span class="nav-number">2.</span> <span class="nav-text"> 代码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#配置初始化"><span class="nav-number">2.1.</span> <span class="nav-text"> 配置初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#metrics生成"><span class="nav-number">2.2.</span> <span class="nav-text"> metrics生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#metrics投递"><span class="nav-number">2.3.</span> <span class="nav-text"> metrics投递</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text"> 总结</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image"
+      src="/images/avatar.png"
+      alt="Xsank">
+  <p class="site-author-name" itemprop="name">Xsank</p>
+  <div class="site-description" itemprop="description">我一直在路上</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span>
+        </a>
+      </div>
+    
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+      
+      
+        
+      
+      
+        
+      
+        <a href="https://github.com/xsanko" title="GitHub &rarr; https://github.com/xsanko" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+    
+      <span class="links-of-author-item">
+      
+      
+        
+      
+      
+        
+      
+        <a href="https://www.zhihu.com/people/xsank-mar/activities" title="知乎 &rarr; https://www.zhihu.com/people/xsank-mar/activities" rel="noopener" target="_blank"><i class="fa fa-fw fa-spinner"></i>知乎</a>
+      </span>
+    
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    
+  
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Xsank</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.1</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.1"></script><script src="/js/motion.js?v=7.4.1"></script>
+<script src="/js/schemes/pisces.js?v=7.4.1"></script>
+
+<script src="/js/next-boot.js?v=7.4.1"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+  <script src="/js/local-search.js?v=7.4.1"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID: 'c59fe7245af96ae675fa',
+      clientSecret: '397d8b47a57adf6877c9985e7a21a40c01927e80',
+      repo: 'xsank.github.io',
+      owner: 'xsank',
+      admin: ['xsank'],
+      id: '708c8d024dbf346741926399e24f5e92',
+        language: 'zh-CN',
+      
+      distractionFreeMode: 'true'
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+</script>
+
+</body>
+</html>

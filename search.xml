@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title><![CDATA[java多线程案例分析]]></title>
+    <url>%2Fposts%2Fc8c89711%2F</url>
+    <content type="text"><![CDATA[开题设定有如下需求： 现要从hbase中导出2016年整年的，大约10w只股票行情数据，数据总量约100t 导出成如下格式：2016-01-01/facebook.txt linkedin.txt amazon.txt google.txt... ... 2016-12-31/facebook.txt linkedin.txt amazon.txt google.txt... 汇总到hdfs中供需求方使用 分析 已知数据量规模大概是100t，那么单台机器处理肯定不是不行的，先不说大多数磁盘都没这么大，即便磁盘有这么大，单台机器处理对于内存和cpu要求也很高，所以我们将问题一般化，使用数量有限的低配机器。 那么接下来要处理的就是如何对任务进行分割，最容易想到的有两种： 按照时间分割 2016年共365天，那么最多拆分成365组，粒度足够细。再按照小时拆分又涉及到数据合并，先不考虑。 按照股票分割 一共10w只，粒度可以拆分的更细。 以上两种都可以，都涉及到最后汇总hdfs的情况，不过按照股票分割粒度更细，更便于控制，这里我们选用后者。 选定分割方式后又会遇到一个问题，如果将任务分割给多台机器，这里先说两种： 按照机器数平均分配 事先将股票裁剪分配好到一台中心机器上，每台机器设定只读取其中一部分或者直接将裁剪好的股票信息分配到对应的机器 这种做否有两个缺点： 这会导致机器状态相关，不便于横向扩展 任务平均分配可能存在不均，资源利用率不够2. 由机器实际处理能力决定 事先将股票信息保存在一台中心机器上，每台机器从这里统一消费 很明显方案二比方案一要好，这里我们选用方案二 现在机器已经分配好了，剩下的就只有单机处理了，剩下的就只有并发的知识了 应到每台机器上的逻辑就是：对于获取到的每只股票，扫描整年的数据，然后写本地，写好之后copy到hdfs即可，再细化下去后大概会遇到如下几个问题： 需要添加生产者-消费者模型 获取股票后要扫取一天的数据，生产者及是hbase数据读取方，消费者便是数据处理方2. 本地磁盘大小有限，数据要及时清理 假设我们的机器磁盘都只有100g的空间，那么必须考虑本次可存的文件最大上线，一旦告警必须等待磁盘数据拷贝完成再继续处理3. 保证数据完整性 这里的任何一条数据都是不能丢弃的，你可以block任务，但是不能reject 扫取范围 对于这种类TSDB的存储，当然最好只扫描一次，但是扫出来的数据都必须根据时间判断，会浪费性能，多线程写还需要考虑文件锁，进一步降低性能，另外如果程序判断按照天截止，又容易造成数据遗漏，不按照天截止缓存整年的数据之后再拷贝到hdfs又会增加时间开销 所以这里最好按照天的粒度再分区间scan，每个线程仅控制一天，避免多线程写，同时便于单文件写好之后立即通知上传线程将文件汇总过去 知识点 第三方系统的掌握 如已经明确相关的hbase，hdfs，其他包含可能会用到的组件如：消息队列，缓存等 多线程控制 会涉及到BlockingQueue,ThreadPool,CountdownLatch,Lock等concurrent知识运用，举个具体例子： 等待ThreadPool的所有任务完成 invokeAll的使用 shutdown结合awaitTermination的使用 ThreadPool提交任务阻塞 定制BlockingQueue Thread同步控制 CountdownLatch的使用 控制生产者和消费者终止 PoisonPill的使用 异步任务处理 小心阻塞操作，避免挂起 Lock使用 根据并发冲突的实际情况，控制锁粒度 总结 这就是一种比较常见的，用到“大数据”处理和并发知识的场景，如果网友有更好的思路，欢迎留言讨论~]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>java</tag>
+        <tag>经验</tag>
+        <tag>多线程</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[java自带序列化注意点]]></title>
+    <url>%2Fposts%2F4433775e%2F</url>
+    <content type="text"><![CDATA[开题大家都知道java使用自带的序列化的时候对象需要实现Serializable接口，然后根据你业务需求，决定是否要自定义readObject和writeObject，其中其实会有一个类属性serialVersionUID，你可以不写，序列化后系统会给你生成好，在反序列化的时候比对校验，都建议说最好给每个序列化类配上一个固定的，那么如果没配呢？ 解读 事实上如果你定了一个协议，八百年不动的话其实没写那个id也没什么，但是如果你动了问题就来了。 通常你作为序列化端，可能某种情况需要升级，照常理说对端也要升级，但是奇葩的情况是在协议里面它居然有方法，只是稍微改了改，属性是完全没动的，即便如此，在只有一端升级的情况下是会报错的： 1234java.io.InvalidClassException: org.test.hehe.Condition; local class incompatible: stream classdesc serialVersionUID = -8099535478841222210, local class serialVersionUID = -800932720215515472 at 更蛋疼的是如果这个方法还必须添加，服务端不能升级，那个协议里面还嵌套了一些协议。。。 好吧，那唯一的解法就是恢复到旧版协议，然后打出序列化协议的id，可以使用如下方法： 123public static long showSUID(Object obj) &#123; return ObjectStreamClass.lookup(obj.getClass()).getSerialVersionUID();&#125; 之后将这些id赋值给新的协议，以后就用这个了。。。 总结 协议里面要只包含属性，不要包含方法实现 协议的serialVersionUID一定要配置]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>java</tag>
+        <tag>经验</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[ThriftFlume 协议分析]]></title>
+    <url>%2Fposts%2Faf6cb65f%2F</url>
+    <content type="text"><![CDATA[背景c++正在开发一个二方包，其中依赖了thrift，但是thrift又依赖了boost,libevent，这对于用户来说是不可接受的，所以那只能自己将网络及协议部分实现一下，本片仅分析协议部分。 flume thrift协议描述文件123456789101112131415namespace java org.apache.flume.thriftstruct ThriftFlumeEvent &#123; 1: required map &lt;string, string&gt; headers, 2: required binary body,&#125;enum Status &#123; OK, FAILED, ERROR, UNKNOWN&#125;service ThriftSourceProtocol &#123; Status append(1: ThriftFlumeEvent event), Status appendBatch(1: list&lt;ThriftFlumeEvent&gt; events),&#125; 协议发送流程 我们这边flume使用的是TCompactProtocol协议，他的消息头如下： 具体为： 1234byte PROTOCOL_ID 0x82byte VERSION_TYPE (VERSION &amp; VERSION_MASK) | ((message.type &lt;&lt; TYPE_SHIFT_AMOUNT) &amp; TYPE_MASK)varint32 MSG_SEQ_ID ++string MSG_NAME method 其中varint32 就是一个对整形数字进行压缩的算法，及对于每一个byte，用首位部分表示时候该数字还有后缀，其余部分来表示数字实体，这样对于0-127就可以用1个byte表示，128-16384用两个byte表示，依次类推。 由于少了4个bit用来表示连续状态，所以varint想要完整的表示int的范围，需要5个byte，这在数字相对比较小的情况下是非常有利的。 其中由于定义了ThriftFlumeEvent数据结构，它的发送流程需要单独描述： 在上图中可以清楚的看到依次处理headers及body的过程 代码实现 知道上面的数据及流程，就可以针对性的实现了 thrift支持的数据结构 123456789101112byte STOP = 0;byte BYTE = 3;byte DOUBLE = 4;byte I16 = 6;byte I32 = 8;byte I64 = 10;byte STRING = 11;byte STRUCT = 12;byte MAP = 13;byte SET = 14;byte LIST = 15;byte ENUM = 16; 我们必须实现的类型： byte,int32,map,string,list,struct 必须实现的逻辑方法 12345678910111213141516171819202122//写部分public void writeMessageBegin(TMessage message);public void writeStructBegin(TStruct struct);public void writeStructEnd();public void writeFieldBegin(TField field);private void writeFieldBeginInternal(TField field, byte typeOverride);public void writeFieldStop();public void writeMapBegin(TMap map);public void writeListBegin(TList list);protected void writeCollectionBegin(byte elemType, int size);public void writeMessageEnd() &#123;&#125;public void writeMapEnd() &#123;&#125;public void writeListEnd() &#123;&#125;public void writeSetEnd() &#123;&#125;public void writeFieldEnd() &#123;&#125;//读部分public TMessage readMessageBegin();public TStruct readStructBegin();public TField readFieldBegin();public TMap readMapBegin();public TList readListBegin(); 必须实现的基础方法 123456789101112131415//写部分public void writeByte(byte b);public void writeI16(short i16);public void writeString(String str);public void writeBinary(ByteBuffer bin);private void writeBinary(byte[] buf, int offset, int length);private void writeVarint32(int n);private int intToZigZag(int n);private void writeByteDirect(byte b);private void writeByteDirect(int n);//读部分public byte readByte()；private int readVarint32()；private int readString(); 这里我们发现出现了一个writeI16，为什么不是varint16呢？这是因为TField类型允许id为负数，之前有介绍varint32算法，但是对于负数怎么处理呢？就是上面必须实现的另一个方法，intToZigZag，代码实现如下： 123private int intToZigZag(int n) &#123; return (n &lt;&lt; 1) ^ (n &gt;&gt; 31); &#125; 及将它转化成正数，这样varint算法就通用了 总结 至此我们分析了flume 中使用thrift的协议的完整流程及相关方法，剩下的就是根据thrift库文件的实现，按需照搬过来就可以接触thrift的依赖了]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>源码分析</tag>
+        <tag>网络协议</tag>
+        <tag>flume</tag>
+        <tag>thrift</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[mysql主从同步分析]]></title>
+    <url>%2Fposts%2F978b3431%2F</url>
+    <content type="text"><![CDATA[工作中由于临时有个数据库数据同步的需求，上海+深圳同步，更多的是保证数据一致，tps和qps都很低。于是简单配置一个主从同步是一个稳妥的方案 配置步骤 修改my.cnf，一定要开启binlog master配置同步账号 master调用show master status \G命令，记录binlog及position slave设置读取master的binlog及position，start slave，通过调用show slave status \G，观察配置结果 原理分析 由于mysql数据同步的原理是通过获取binlog记录的所有sql操作并同步执行而实现的，所以作为master的服务器必须开启binlog，另外由于区分主次，server-id必须不同 slave服务器必须有可以连接master数据库的账号 slave服务器在开始同步时，需要知道当前从master的哪个binlog的position开始执行同步 这里有一点小迷惑，暂时还没有时间去深究，先记录下来： 网上资料都说master-slave的数据同步是通过masterpush过去的，这里我感觉有点奇怪： 如果使用push模式，那么master肯定知道slave的进度，那么master可以直接推给slave 因为是pull模式，slave才必须配置binlog+position 先留下这个坑，以后填。。。 实践 错误的binlog+position slave状态如下： 1234Slave_IO_Running: No...Last_IO_Errno: 1236Last_IO_Error: Got fatal error 1236 from master when reading data from binary log: &apos;Could not find first log file name in binary log index file&apos; 很明是slave找不到，不知道应该怎么读了，重新配置正确的binlog+position，错误消失，io thread恢复 从这里就明显感觉这个数据同步应该是pull模式。 冲突的sql Slave_SQL_Running: No ... Last_Errno: 1062 Last_Error: Error &amp;apos;Duplicate entry &amp;apos;9527&amp;apos; for key &amp;apos;PRIMARY&amp;apos;&amp;apos; on query. Default database: &amp;apos;test&amp;apos;. Query: &amp;apos;INSERT INTO `test` (`data`, `create_time`) VALUES (&amp;apos;/test?show&amp;amp;o=N4IglgJiBcB2CuAbRAaEAXAhgcwM4wG0BdNXdAT0QFMYQJMAnAaxDXTAFsqAvAe1hrQQAIwa8A7rioNWIKhDBZh1GADNMiKWg6YmVAKIKl1ACq9eidgAdaAWV1UABIcWZlNbQ5fGqAYUSYuPhC6gC0iLwAxixoABaQfvzoYppqGloguLGM8r5iQdlgMtDqmlSkmABuVABC5HlUmOi8xaUZYLgNTS0wyfDlIGKShKCxVGDYsei0AEwArAAMVgAeslaYAqnQBKDs6CpCAAobVIiOJooqaNJirekDuOuwMACMM9dGbgd9AxRWgiBsAxMFZYrIOgA5KjiXoMfpoSCvNiMbBUdDBHYgHBAqjYbrFTLwDiyIEbJCMRTkWiYeDNWQQCSwXCYDhWagAQWwOLxzQJVWw9MZzNZ1AAYmBkIcLGBIlShLB+B5BlRVABJKBCdmyLjJGW0BnRaQAOio1Vg6CN2QAzAB9SLwc2YXg2hY2si2gDs8CN5mJAF8SHQmoFePAGJFBAhkGgGFRYBBpNJaKoItM0ORMMsqBjQAFhKcYFHUJlYhJYfCQBFsDVAoIXtowM84EhizpVs3oyBVC0dNMhFkWtM-Shc24Cx3iwOYdAfmgqzWpEiQBxG4WW5520W0N2GL3aAOGEPA8tMx0YKAp+WqMPAQxEdBdrFYwPEBAXmvO+gn9nS6+Zh-iy-Z9fzfXwLB6IQGGwYRMAAChmF4ADYUEcGYFgWFCZg9FCFiNLCAEpZCAn8LAgGYwIiAkoJg+CrQAFhQl43kY5jHFwmYZkIm9EEbbMr23CVEBgDDK148RIC-JcrF4Rt0TSMo0Gk2TgQUeBgjm 这里通常就是数据库数据不一致的问题了，slave中的primary key和binlog同步过来的sql发生冲突，这会导致sql thread挂掉，不会再继续同步数据。 由于mysql并不会自动处理此类情况，所以你需要重新配置slave才能恢复。]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>数据库</tag>
+        <tag>mysql</tag>
+        <tag>运维</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[简单事务代码实现]]></title>
+    <url>%2Fposts%2Ff6217665%2F</url>
+    <content type="text"><![CDATA[开题很多情况下会要求事务的特性支持，比如数据库操作，比如消息处理 好在代码上如果需要处理事物的话其实还比较简单 代码 提取接口事务常见的用法即：begin,commit,rollback,close，那么就提取这样的接口出来：123456789public interface Transaction &#123; void begin(); void commit(); void rollback(); void close();&#125; ### 自定义实现 在begin部分完成一些初始化工作* 在commit部分可以做的比较灵活： 你可以在这里提交你做的操作，并在操作失败的情况下返回异常信息； 也可以只设置状态，在你自身代码中添加你想做的操作，只是操作完后记得调用commit修改状态即可 需要注意的是由于发生执行失败需要回滚，所以你需要将rollback所需要执行的操作或数据保存下来，如果执行成功，则清空* 在rollback的部分，根据commit的执行情况执行回滚（通常都是抛异常时），当然在rollback操作时还是会发生异常，根据业务场景可以加入重试策略* 在close的部分释放资源 总结 根据事物的特性代码上实现就这些了，高级的场景另外分析]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>小技巧</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[程序员的几种状态，你落在哪儿？]]></title>
+    <url>%2Fposts%2F98844f7a%2F</url>
+    <content type="text"><![CDATA[引子不知不觉已经工作3年多，看看刚校招进来的94小鲜肉，不禁感叹：自己真的老了 在工作的这些日子，自己经历了好几种状态，简单来说有以下几种 状态统计 学习阶段刚进入一个新的环境，对于一切都感到很好奇，无论给了你什么任务你都心甘情愿的接收并且干的津津有味，虽然这很可能是别人一点都不愿意干的活儿，但对于自己而言，无疑是收获满满的。 毫无疑问，这是新环境的学习阶段，这个阶段往往是最累的，但恰恰是你收回最快的阶段，如果熬过去，你会发现你真的学到了很多东西。 烦躁阶段 毫无疑问，如果上面的学习阶段你都完全Hold住了，能独当一面了，就工作的业务而言你可能会开始烦躁了。工作中没有多少任务是完全不重复的，也没有多少任务是有充分的挑战性的。这意味着之前你感到新鲜的东西对你而言已经索然无味了。即便你自己反复汲取，也吸收不到多少营养。 如果有机会将业务拓展延伸，那自然是极好的，但更多的情况向会受限于“屁股决定脑袋”，那这时候应该静下心来思考下自己到底哪些地方不足，完善下自己。虽然暂时被工作“抛弃”了，但是自己还是要对自己保持信心。 选择阶段 经过一段时间的思考，你会认识到自己的不足，真正的意识到自己究竟想要什么，类比人的成长这才是真成成熟起来了。 如果你只是想要一份安逸的工作，那就应该本本分分的做事，2,3年晋升，差不多在30岁时应该能当个高级专家； 如果你想要的是一份事业，那应该考虑下自己还应该在准备些什么，这个难度可跟刚才的不在一个量级上了。多少人踏上了创业的旅程被杀的片甲不留，但无论成功与否，这不应该是一个年轻人应该取挑战的么？ 无论选择的哪条路，都祝你好好的走下去，应为一旦确立，你将没筹码继续玩下去了。 麻木阶段 我还没到这个阶段，但是就我面试的情况而言，不少30-40岁的程序员已经在了。有的是因为家庭，有的是自己性格使然，总之就发展而言，他们的曲线已经不会再有什么波动了，只是有的人相对高些，有的人则低些，这往往也是大多数人的归宿。 梦想就不要再谈了，那是说给“小孩子”听的，这时候就老老实实的过日子吧。 升华阶段 这种人无疑是上帝的宠儿，还有梦想，而且奔跑在梦想的大道上，无奈自己完全没有感受过，就不YY了。 最后 目前的我只经历过上面的3种状态，还庆幸着自己有的选，只是迟迟没有迈出下一步… 到底会不会变成一条“咸鱼”呢？]]></content>
+      <categories>
+        <category>思绪</category>
+      </categories>
+      <tags>
+        <tag>随笔</tag>
+        <tag>感想</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[如果你也不想用flume-client]]></title>
+    <url>%2Fposts%2Fdf1eb6a9%2F</url>
+    <content type="text"><![CDATA[开题工作中遇到了一种场景，需要使用多语言版本客户端，而其中java的版本使用到了flume的二方包，考虑到其他语言开发的便捷性，准备移除flume二方包依赖 改造其实很多场景下使用flume二方包仅仅是为了连接flume并且往里面灌点数据，没有太多复杂的用法，那么需要解决的核心问题就是通信了。要支持多语言，有很多方案可以选择：json，xml，protobuf，thrift等。考虑到性能及易用，这里使用的是thrift。 flume使用thrift的描述文件是： 123456789101112131415161718namespace java org.apache.flume.thriftstruct ThriftFlumeEvent &#123; 1: required map &lt;string, string&gt; headers, 2: required binary body,&#125;enum Status &#123; OK, FAILED, ERROR, UNKNOWN&#125;service ThriftSourceProtocol &#123; Status append(1: ThriftFlumeEvent event), Status appendBatch(1: list&lt;ThriftFlumeEvent&gt; events),&#125; 那接下来就简单多了： 通过thrift工具生成指定语言版本所需的类，稍微包装下通信的client的，就可以剔除flume二方包了 最后 关于二方包，真是要吐个大槽。 考虑到你是为很多开发人员使用，所以应该尽可能的考虑灵活性，通用性，而不应该弄一个大而全的杂货铺： 你没必要为了用一个gcd方法就把commons-math包引入进来 你没必要为了用Lists,Maps初始化就把guava引入进来 你没必要… 真的，如果你有幸写一个二方包，考虑下开发者的感受]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>flume</tag>
+        <tag>二方包</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[hadoop-metrics2源码分析]]></title>
+    <url>%2Fposts%2F408b7a09%2F</url>
+    <content type="text"><![CDATA[开题hadoop-metrics2其实是hadoop-common工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码 代码分析hadoop-metrics2的整个流程都被封装到了MetricsSystem中，随着这个类的启动，配置初始化-&gt;metrics生成-&gt;metrics投递的整个链路就串通了。 配置初始化 hadoop-metrics2自己定义了一种配置，名字开头必须为hadoop-metrics2，可以自定义尾缀，其中主要完成了MetricsSource和MetricsSink的一些配置，其中对MetricsSink有非常重的依赖，由于hadoop-metrics2将MetricsSink实现了插件化，而这种插件化是通过SubsetConfiguration完成初始化，所以这部分感觉使用起来并不是很灵活。 在MetricsSystem正式启动之前，会先通过configure的调用完成配置加载及初始化 metrics生成 所有被hadoop-metrics2管理的数据源必须实现MetricsSource接口： 123public interface MetricsSource &#123; void getMetrics(MetricsCollector var1, boolean var2);&#125; 实现好接口之后，你需要将其register到MetricsSystem中，之后它会对MetricsSource进行简单的包装并管理起来 ，MetricsSystem启动之后会启动一个Timer定时器来周期性执行Metircs的流转，并且MetricsSystem中生成的MetricsCollector对象，会在各个MetricsSource之间传递。 由于之前注册过了MetricsSource，你的数据源就会在这时候被调用处理。 你可以在有数据变动的时候利用MetricsCollector来构造MetricsRecordBuilder并添加数据 这里再说一下MutableMetric和MetricsRegistry。 MetricsRegistry用来管理hadoop-metrics2的几种基本类型的Metircs，如：Gauge，Couter，Stat等，并且这些Metircs都继承自MutableMetric。 作为抽象父类的MutableMetric的方法snapshot很特别，他返回的是上一次的快照，并通过changed来判定是否发生数据变化，这样只需要在数据变动的时候投递Metrics，抽象类代码如下： 123456789101112131415161718192021public abstract class MutableMetric &#123; private volatile boolean changed = true; public abstract void snapshot(MetricsRecordBuilder var1, boolean var2); public void snapshot(MetricsRecordBuilder builder) &#123; this.snapshot(builder, false); &#125; protected void setChanged() &#123; this.changed = true; &#125; protected void clearChanged() &#123; this.changed = false; &#125; public boolean changed() &#123; return this.changed; &#125;&#125; metrics投递 在前面完成Metrics生成之后，MetricsSystem会调用publishMetrics方法来完成数据投递。 这里hadoop-metrics2还做了点特别的工作。 一开始在完成配置加载后，MetricsSystem对MetricsSink进行了包装，生成了MetricsSinkAdapter，这里主要是为了增加对Metrics的吞吐量的管理。 每一个MetricsSinkAdapter内部都有一个SinkQueue用于数据缓冲并添加了重试逻辑。 由于之前添加的Sink都实现了MetricsSink接口： 12345public interface MetricsSink extends MetricsPlugin &#123; void putMetrics(MetricsRecord var1); void flush();&#125; 在具体实现的putMetrics中你可以完成数据的具体操作，写文件也好，写DB也好，消息队列也好 总结 hadoop-metrics2总体的设计思路很简洁，但是由于和hadoop-common绑定太死，会很笨重，尤其在包冲突问题上表现明显。 另外作为一个二方包，仅仅作为数据投递，感觉设计的还是略微繁琐切易用性不够。 考虑到hadoop-metrics2更多是为hadoop社区服务，可能初衷就没考虑通用性，加上其逻辑并不复杂，完全可以参考思路自己实现一套轻量的Metrics二方包。 这才是合理的造轮子。]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>源码分析</tag>
+        <tag>hadoop-metrics2</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Html在线xpath测试小工具]]></title>
+    <url>%2Fposts%2F40a6ed4c%2F</url>
+    <content type="text"><![CDATA[开题3年前写爬虫的时候还是用的正则，而且都是用原生的库。最近貌似爬虫相关的文章比较多，于是我也想弄点资料玩一玩了。简单看了下scrapy的使用，发现用了xpath来定位爬取数据，确实比正则要简介方便。 但是在我进行页面分析的时候，发现网上居然没有xpath在线测试的工具，json格式化，正则测试，unix时间戳什么的倒是不少，于是花了一点时间做了一个很简单的网页版xpath在线测试，这样在对html进行分析的时候就方便多了。 xpath介绍 XPath 是一门在 XML 文档中查找信息的语言。XPath 可用来在 XML 文档中对元素和属性进行遍历。 XPath 是 W3C XSLT 标准的主要元素，并且 XQuery 和 XPointer 都构建于 XPath 表达之上。 因此，对 XPath 的理解是很多高级 XML 应用的基础。 在线手册 最后 实际代码非常少，寥寥几十行就可以了，演示效果如下： xpath_tester:源码地址 至于前端效果就先不管那么多，还得抓紧时间爬数据呢。。。]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>开源项目</tag>
+        <tag>小工具</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[2016-回顾总结]]></title>
+    <url>%2Fposts%2Fb6b7d7d%2F</url>
+    <content type="text"><![CDATA[2015年12月10日，入职阿里，不知不觉又过了一个春秋，无论是欢笑还是痛苦，都将成为满满的回忆 工作来阿里这一年应该是我工作这三年中收获最大的一年，真切的觉得自己的眼界开阔了。 1.技能 学习掌握了各种中间件，如：精卫，metaq，diamond，hsf，TDDL，eagleeye等，其中部分中间件做了深入了解，明白了一个中间件应该在何种场景下使用，使用上应该注意什么问题 了解了各种平台，如：BCP，全链路压测，宙斯，aone，GOC，xflush，armory等，从底层的机房管理到上层软件的开发测试发布，阿里有自己的一套体系，并且正是这套体系维持着阿里现有生态环境。 深入学习了solr+lucene，在进阿里之前面试官君山问我想做技术还是想做业务，我当然说搞技术了，没想到进来是搞搜索，而且一搞就是一年。由于是老业务，所以更多的精力放在了维护上，不过也因此深入的体会到了一个分布式系统应该注意的问题，也深入的体会到了一个数据型业务应该注意的问题。 工作之余的研究学习使得我进一步掌握了solr的实现细节，明白了一个真正的搜索系统应该拥有哪些周边环节，仅仅靠lucene是不够的，仅仅拿来使用也是不够的，如果有定制化需求，你得知道怎么改才更符合公司的业务需求。 了解了阿里的docker化体系。由于此前在云计算公司待过，做过类似swarm的管理工具，所以上手很容易。加上作为业务平台部门的docker专项负责人，推进了各个部门的docker化，从架构上明白了公司对于docker化的运用。 参加了双十一，这个也算技能的原因是此前一直不知道双十一如此巨大的qps+tps到底应该怎么做，现在心里有杆秤了，不会再觉得那么虚无缥缈高不可攀了。 2.文化 适应了大公司合作开发的流程，明白了纵向合作与横向合作的特点。 真切感受到了KPI文化，你得知道什么是你的事，什么是别人的事，别一副好心肠的替别人干了那么久才知道仅仅只算个帮忙而已。 生活 1.旅游 非常感谢阿里十派，，也就只有大公司才会有这么多社团。在后半年中（前半年天天救火了，还特么玩？），和公司的小伙儿伴儿一起去了桃花源,江郎山，龙须山，武功山，一起参加了圣诞party，和部门的同事一起去了日本，这确实缓解了很大的工作压力（主要是烦），并且使我爱上了旅游 2.健身 感谢前同事元起转让的健身卡，成功从原来的旱鸭子到现在的泳池高手（掌握了蛙泳，自由泳，蝶泳，仰泳总觉得怪怪的，不想学）,同时报了12节私教课，体重实实在在的涨了不到10斤，脂肪肌肉怎么也得55开吧，实现了我增重的小心愿。 3.居住 工作3年多，终于攒够了首付，房价再收敛收敛，哥要出手了！ 情感 太悲催了，还没碰到我的另一半，完善自身条件中，希望来年有人看得上。。。 总结 已工作3年多，在知识面上已经有相当的广度，2017年着重发展深度，并希望自己能踏踏实实的搞一个开源项目 加强英语学习，听力有了初步改善，明年要达到看电影不看字幕的水平 抽空练习算法，不得不说这东西真是用进废退，很早前玩了一个月能到到做easy提笔就写，medium耗费半小时左右，hard时间不定，但总不会少于1小时，空了一个季度之后，上来做个easy的数学题竟然都不开窍了，来年要好好夯实一下 继续旅游，劳逸结合，期待遇到更多的小伙伴儿 就这些吧，目前想到的应该都是重点，期待自己来年能变得更好，加油2017！]]></content>
+      <categories>
+        <category>思绪</category>
+      </categories>
+      <tags>
+        <tag>随笔</tag>
+        <tag>感想</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[I'm back!]]></title>
+    <url>%2Fposts%2F6adf81ae%2F</url>
+    <content type="text"><![CDATA[由于sae停止为开发者提供免费金币，经过一段时间付费发现原有博客那丢丢流量还是挺费钱的，所以干脆用github的好了，永远online，还能练习markdown… 感谢github提供的免费空间，感谢hexo提供的blog支持，感谢NexT的主题 坑已挖好，准备开填(≧▽≦)/啦啦啦]]></content>
+      <tags>
+        <tag>随笔</tag>
+        <tag>冒泡</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[EasyProxy之golang初步学习]]></title>
+    <url>%2Fposts%2F3aeff3cd%2F</url>
+    <content type="text"><![CDATA[最近工作中遇到了golang的项目，稍稍对其产生了点兴趣，打算认真学习下，正巧在搭建mysql主备环境的时候发现如果用一个代理程序的话自己测试会方便很多（主要还是为了造轮子），于是这个基于golang的tcp proxy项目就产生了 需求 由于是为了学习golang，所以要在实现代理基础功能的前提下尽可能的用到golang的各种基础知识 不可能真单纯的为了玩，学一个东西除了为充实大脑，更为了能有实际用途，所以有必要工程化 程序不要太繁杂，毕竟这是我的第一个golang工程，来日方长 设计 结构图如下： 12345678910111213141516171819+----------+ +------------+| client |&lt;--------+ | |+----------+ +--------&gt;+-----+&lt;---------------&gt;| server | | | | |+----------+ | | +------------+| client |&lt;-----------------&gt;| |+----------+ | | | | +------------++----------+ | L | | || client |&lt;-----------------&gt;| B |&lt;---------------&gt;| server |+----------+ | S | | | | | +------------++----------+ | || client |&lt;-----------------&gt;| |+----------+ | | +------------+ | | | |+----------+ +---------&gt;+-----+&lt;---------------&gt;| server || client |&lt;-------+ | |+----------+ +------------+ 最常见的负载均衡模式，但有几个点需要支持： 支持不同的调度策略，如：轮训，随机等 要有心跳检查机制，及时将有问题的后端server剔除，但也要在server恢复的时候恢复过来 有简单的监控，便于查看后端server的代理情况及客户端的连接情况 有简单的配置文件，便于修改 …后续再加… 实现 github:EasyProxy 欢迎交流~ 总结 在这个工程第一版结束后，较为深入的学习了slice,map,channel,struct,interface等结构，还玩了下golang的协程，反射，多态等特性，顺带掌握了下其工程化应当注意的包循环引入,debug,打包发布等问题 总之现在对golang的熟悉程度就不像看书那么虚了~ 其他 如还有其他问题，欢迎喜欢golang的小伙伴联系我：xsank#foxmmail.com]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>编程</tag>
+        <tag>开源项目</tag>
+      </tags>
+  </entry>
+</search>
