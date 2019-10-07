@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="xsank.com/"/>
-  <updated>2019-10-07T06:59:15.402Z</updated>
+  <updated>2019-10-07T09:44:05.628Z</updated>
   <id>xsank.com/</id>
   
   <author>
@@ -17,11 +17,37 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>博客恢复</title>
+    <link href="xsank.com/posts/83ff057a/"/>
+    <id>xsank.com/posts/83ff057a/</id>
+    <published>2019-10-07T09:12:48.000Z</published>
+    <updated>2019-10-07T09:44:05.628Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;前言&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#前言&quot;&gt;&lt;/a&gt; 前言&lt;/h2&gt;&lt;p&gt;一直借口各种「忙」，突然想起来自己的犄角旮旯里还有个博客在吃灰，最近工作积累了不少存货，好记性不如烂笔头，就记在这里吧&lt;/p&gt;&lt;h2 id=&quot;博客迁移&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#博客迁移&quot;&gt;&lt;/a&gt; 博客迁移&lt;/h2&gt;&lt;p&gt;由于博客的项目在电脑回收的时候一同丢失了，首先要把原来的文章先恢复下&lt;/p&gt;&lt;ol&gt;
+&lt;li&gt;确保之前的博客开启了「rss」&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;hexo migrate rss &amp;lt;source&amp;gt;&lt;/code&gt; 进行迁移&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+    
+      <category term="备忘" scheme="xsank.com/categories/%E5%A4%87%E5%BF%98/"/>
+    
+    
+      <category term="hexo" scheme="xsank.com/tags/hexo/"/>
+    
+      <category term="博客" scheme="xsank.com/tags/%E5%8D%9A%E5%AE%A2/"/>
+    
+  </entry>
+  
+  <entry>
     <title>java多线程案例分析</title>
     <link href="xsank.com/posts/c8c89711/"/>
     <id>xsank.com/posts/c8c89711/</id>
     <published>2017-03-19T10:31:06.000Z</published>
-    <updated>2019-10-07T06:59:15.402Z</updated>
+    <updated>2019-10-07T09:10:32.174Z</updated>
     
     <summary type="html">
     
@@ -131,7 +157,7 @@
     <link href="xsank.com/posts/f6217665/"/>
     <id>xsank.com/posts/f6217665/</id>
     <published>2017-01-22T08:56:11.000Z</published>
-    <updated>2019-10-07T08:07:55.061Z</updated>
+    <updated>2019-10-07T09:04:44.277Z</updated>
     
     <summary type="html">
     
