@@ -56,19 +56,22 @@
   };
 </script>
 
-  <meta name="description" content="开题hadoop-metrics2其实是hadoop-common工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码 代码分析hadoop-metrics2的整个流程都被封装到了MetricsSystem中，随着这个类的启动，配置初始化-&amp;gt;metrics生成-&amp;gt;metrics投递的整个链路就串通了。">
-<meta name="keywords" content="源码分析,hadoop-metrics2">
+  <meta name="description" content="缘起最近的「github」访问速度奇慢，导致「blog」也受了很大影响，页面完全刷新居然要30+s！虽然博客只是我个人记录的地方，但这个访问速度着实影响心情，是时候得优化一下了… 分析先开启「chrome」，分析加载慢的原因 图片慢，要20s，只是一张300k的头像+ js慢，这个文件也比较多，不过大多都是几k而已 字体文件慢，一个75k的文件">
+<meta name="keywords" content="经验,cloudflare,hexo,github">
 <meta property="og:type" content="article">
-<meta property="og:title" content="hadoop-metrics2源码分析">
-<meta property="og:url" content="xsank.com/posts/408b7a09/index.html">
+<meta property="og:title" content="使用cloudflare优化基于github的hexo博客访问速度">
+<meta property="og:url" content="xsank.com/posts/b8500c7d/index.html">
 <meta property="og:site_name" content="Xsank&#39;s blog">
-<meta property="og:description" content="开题hadoop-metrics2其实是hadoop-common工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码 代码分析hadoop-metrics2的整个流程都被封装到了MetricsSystem中，随着这个类的启动，配置初始化-&amp;gt;metrics生成-&amp;gt;metrics投递的整个链路就串通了。">
+<meta property="og:description" content="缘起最近的「github」访问速度奇慢，导致「blog」也受了很大影响，页面完全刷新居然要30+s！虽然博客只是我个人记录的地方，但这个访问速度着实影响心情，是时候得优化一下了… 分析先开启「chrome」，分析加载慢的原因 图片慢，要20s，只是一张300k的头像+ js慢，这个文件也比较多，不过大多都是几k而已 字体文件慢，一个75k的文件">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-10-07T06:55:41.429Z">
+<meta property="og:image" content="/posts/b8500c7d/github_page_speed.png">
+<meta property="og:image" content="/posts/b8500c7d/cloudflare_speed.png">
+<meta property="og:updated_time" content="2019-10-08T06:46:54.326Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="hadoop-metrics2源码分析">
-<meta name="twitter:description" content="开题hadoop-metrics2其实是hadoop-common工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码 代码分析hadoop-metrics2的整个流程都被封装到了MetricsSystem中，随着这个类的启动，配置初始化-&amp;gt;metrics生成-&amp;gt;metrics投递的整个链路就串通了。">
-  <link rel="canonical" href="xsank.com/posts/408b7a09/">
+<meta name="twitter:title" content="使用cloudflare优化基于github的hexo博客访问速度">
+<meta name="twitter:description" content="缘起最近的「github」访问速度奇慢，导致「blog」也受了很大影响，页面完全刷新居然要30+s！虽然博客只是我个人记录的地方，但这个访问速度着实影响心情，是时候得优化一下了… 分析先开启「chrome」，分析加载慢的原因 图片慢，要20s，只是一张300k的头像+ js慢，这个文件也比较多，不过大多都是几k而已 字体文件慢，一个75k的文件">
+<meta name="twitter:image" content="/posts/b8500c7d/github_page_speed.png">
+  <link rel="canonical" href="xsank.com/posts/b8500c7d/">
 
 
 <script id="page-configurations">
@@ -82,7 +85,7 @@
   };
 </script>
 
-  <title>hadoop-metrics2源码分析 | Xsank's blog</title>
+  <title>使用cloudflare优化基于github的hexo博客访问速度 | Xsank's blog</title>
   
 
 
@@ -248,7 +251,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="xsank.com/posts/408b7a09/">
+    <link itemprop="mainEntityOfPage" href="xsank.com/posts/b8500c7d/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Xsank">
@@ -260,7 +263,7 @@
       <meta itemprop="name" content="Xsank's blog">
     </span>
       <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">hadoop-metrics2源码分析
+        <h1 class="post-title" itemprop="name headline">使用cloudflare优化基于github的hexo博客访问速度
 
           
         </h1>
@@ -276,19 +279,11 @@
                 
               
 
-              <time title="创建时间：2017-01-08 12:35:08" itemprop="dateCreated datePublished" datetime="2017-01-08T12:35:08+08:00">2017-01-08</time>
+              <time title="创建时间：2019-10-08 14:11:44 / 修改时间：14:46:54" itemprop="dateCreated datePublished" datetime="2019-10-08T14:11:44+08:00">2019-10-08</time>
             </span>
           
             
 
-            
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2019-10-07 14:55:41" itemprop="dateModified" datetime="2019-10-07T14:55:41+08:00">2019-10-07</time>
-              </span>
             
           
             <span class="post-meta-item">
@@ -297,7 +292,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/编程/" itemprop="url" rel="index"><span itemprop="name">编程</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/工具/" itemprop="url" rel="index"><span itemprop="name">工具</span></a></span>
 
                 
                 
@@ -316,37 +311,41 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="开题"><a class="markdownIt-Anchor" href="#开题"></a> 开题</h2><p><code>hadoop-metrics2</code>其实是<code>hadoop-common</code>工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码</p><h2 id="代码分析"><a class="markdownIt-Anchor" href="#代码分析"></a> 代码分析</h2><p><code>hadoop-metrics2</code>的整个流程都被封装到了<code>MetricsSystem</code>中，随着这个类的启动，配置初始化-&gt;metrics生成-&gt;metrics投递的整个链路就串通了。</p><a id="more"></a>
+        <h2 id="缘起"><a class="markdownIt-Anchor" href="#缘起"></a> 缘起</h2><p>最近的「github」访问速度奇慢，导致「blog」也受了很大影响，页面完全刷新居然要30+s！虽然博客只是我个人记录的地方，但这个访问速度着实影响心情，是时候得优化一下了…</p><h2 id="分析"><a class="markdownIt-Anchor" href="#分析"></a> 分析</h2><p>先开启「chrome」，分析加载慢的原因</p><ol>
+<li>图片慢，要20s，只是一张300k的头像+</li>
+<li>js慢，这个文件也比较多，不过大多都是几k而已</li>
+<li>字体文件慢，一个75k的文件</li>
+</ol><a id="more"></a>
 
 
 
-<h3 id="配置初始化"><a class="markdownIt-Anchor" href="#配置初始化"></a> 配置初始化</h3>
-<p><code>hadoop-metrics2</code>自己定义了一种配置，名字开头必须为<code>hadoop-metrics2</code>，可以自定义尾缀，其中主要完成了<code>MetricsSource</code>和<code>MetricsSink</code>的一些配置，其中对<code>MetricsSink</code>有非常重的依赖，由于<code>hadoop-metrics2</code>将<code>MetricsSink</code>实现了插件化，而这种插件化是通过<code>SubsetConfiguration</code>完成初始化，所以这部分感觉使用起来并不是很灵活。<br>
-在<code>MetricsSystem</code>正式启动之前，会先通过<code>configure</code>的调用完成配置加载及初始化</p>
-<h3 id="metrics生成"><a class="markdownIt-Anchor" href="#metrics生成"></a> metrics生成</h3>
-<p>所有被<code>hadoop-metrics2</code>管理的数据源必须实现<code>MetricsSource</code>接口：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">MetricsSource</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">getMetrics</span><span class="params">(MetricsCollector var1, <span class="keyword">boolean</span> var2)</span></span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>实现好接口之后，你需要将其<code>register</code>到<code>MetricsSystem</code>中，之后它会对<code>MetricsSource</code>进行简单的包装并管理起来<br>
-，<code>MetricsSystem</code>启动之后会启动一个<code>Timer</code>定时器来周期性执行<code>Metircs</code>的流转，并且<code>MetricsSystem</code>中生成的<code>MetricsCollector</code>对象，会在各个<code>MetricsSource</code>之间传递。<br>
-由于之前注册过了<code>MetricsSource</code>，你的数据源就会在这时候被调用处理。<br>
-你可以在有数据变动的时候利用<code>MetricsCollector</code>来构造<code>MetricsRecordBuilder</code>并添加数据<br>
-这里再说一下<code>MutableMetric</code>和<code>MetricsRegistry</code>。<br>
-<code>MetricsRegistry</code>用来管理<code>hadoop-metrics2</code>的几种基本类型的<code>Metircs</code>，如：<code>Gauge</code>，<code>Couter</code>，<code>Stat</code>等，并且这些<code>Metircs</code>都继承自<code>MutableMetric</code>。<br>
-作为抽象父类的<code>MutableMetric</code>的方法<code>snapshot</code>很特别，他返回的是上一次的快照，并通过<code>changed</code>来判定是否发生数据变化，这样只需要在数据变动的时候投递<code>Metrics</code>，抽象类代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">MutableMetric</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">boolean</span> changed = <span class="keyword">true</span>;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">snapshot</span><span class="params">(MetricsRecordBuilder var1, <span class="keyword">boolean</span> var2)</span></span>;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">snapshot</span><span class="params">(MetricsRecordBuilder builder)</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.snapshot(builder, <span class="keyword">false</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">setChanged</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.changed = <span class="keyword">true</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">clearChanged</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.changed = <span class="keyword">false</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">changed</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.changed;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<h3 id="metrics投递"><a class="markdownIt-Anchor" href="#metrics投递"></a> metrics投递</h3>
-<p>在前面完成<code>Metrics</code>生成之后，<code>MetricsSystem</code>会调用<code>publishMetrics</code>方法来完成数据投递。<br>
-这里<code>hadoop-metrics2</code>还做了点特别的工作。<br>
-一开始在完成配置加载后，<code>MetricsSystem</code>对<code>MetricsSink</code>进行了包装，生成了<code>MetricsSinkAdapter</code>，这里主要是为了增加对<code>Metrics</code>的吞吐量的管理。<br>
-每一个<code>MetricsSinkAdapter</code>内部都有一个<code>SinkQueue</code>用于数据缓冲并添加了重试逻辑。<br>
-由于之前添加的Sink都实现了<code>MetricsSink</code>接口：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">MetricsSink</span> <span class="keyword">extends</span> <span class="title">MetricsPlugin</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">putMetrics</span><span class="params">(MetricsRecord var1)</span></span>;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">flush</span><span class="params">()</span></span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>在具体实现的<code>putMetrics</code>中你可以完成数据的具体操作，写文件也好，写DB也好，消息队列也好</p>
-<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
-<p><code>hadoop-metrics2</code>总体的设计思路很简洁，但是由于和<code>hadoop-common</code>绑定太死，会很笨重，尤其在包冲突问题上表现明显。<br>
-另外作为一个二方包，仅仅作为数据投递，感觉设计的还是略微繁琐切易用性不够。<br>
-考虑到<code>hadoop-metrics2</code>更多是为<code>hadoop</code>社区服务，可能初衷就没考虑通用性，加上其逻辑并不复杂，完全可以参考思路自己实现一套轻量的<code>Metrics</code>二方包。<br>
-这才是合理的造轮子。</p>
+
+<p>看起来也就是静态文件需要加速而已，那么首选就是CDN了</p>
+<h3 id="实操"><a class="markdownIt-Anchor" href="#实操"></a> 实操</h3>
+<h4 id="阿里云cdn"><a class="markdownIt-Anchor" href="#阿里云cdn"></a> 阿里云CDN</h4>
+<p>由于域名是在「阿里云」上买的，自然也就不打算换了，本以为会很简单，但不想头疼的问题来了<br>
+要申请使用CDN必须要「ICP备案」，要备案必须要「备案服务号」，要备案服务号必须要购买「虚机」…<br>
+讲道理，当初选择「github page」就是懒得管虚机，你这不坑我么<br>
+顺便尝试了其他CDN都需要备案，而「ICP备案」系统已经被「阿里云」收了，好吧，你厉害，我换个其他法子</p>
+<h4 id="阿里云oss"><a class="markdownIt-Anchor" href="#阿里云oss"></a> 阿里云OSS</h4>
+<p>不是打广告，只是觉得一个地方管理方便，顺带想到了「OSS」。把图片上传后下载发现速度确实挺快，后面改下图片引用地址就好了嘛!<br>
+可是刚准备写篇文章记录下才发现其实这样很不方便，每次倒腾资源文件都得上传一遍「OSS」，就算写个脚本感觉也不清爽…</p>
+<h4 id="免备案cloudflare"><a class="markdownIt-Anchor" href="#免备案cloudflare"></a> 免备案Cloudflare</h4>
+<p>翻了半天资料，国内的CDN都要备案，而备案都要买国内的主机，好吧，那只能使用国际的CDN了<br>
+对于个人博客来说基本是免费的，而且使用很方便，只要求把「DNS」换成他家的，剩下的全在「console」上配置</p>
+<p>先来「ping」下「DNS Server」<br>
+阿里云：</p>
+<figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">PING dns9.hichina.com (<span class="number">106.11</span><span class="number">.141</span><span class="number">.125</span>): <span class="number">56</span> data bytes</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">106.11</span><span class="number">.141</span><span class="number">.125</span>: icmp_seq=<span class="number">0</span> ttl=<span class="number">54</span> time=<span class="number">29.700</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">106.11</span><span class="number">.141</span><span class="number">.125</span>: icmp_seq=<span class="number">1</span> ttl=<span class="number">54</span> time=<span class="number">29.035</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">106.11</span><span class="number">.141</span><span class="number">.125</span>: icmp_seq=<span class="number">2</span> ttl=<span class="number">54</span> time=<span class="number">29.366</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">106.11</span><span class="number">.141</span><span class="number">.125</span>: icmp_seq=<span class="number">3</span> ttl=<span class="number">54</span> time=<span class="number">625.300</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">106.11</span><span class="number">.141</span><span class="number">.125</span>: icmp_seq=<span class="number">4</span> ttl=<span class="number">54</span> time=<span class="number">476.028</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">106.11</span><span class="number">.141</span><span class="number">.125</span>: icmp_seq=<span class="number">5</span> ttl=<span class="number">54</span> time=<span class="number">28.828</span> ms</span><br></pre></td></tr></table></figure>
+<p>Cloudflare：</p>
+<figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">PING dora.ns.cloudflare.com (<span class="number">173.245</span><span class="number">.58</span><span class="number">.108</span>): <span class="number">56</span> data bytes</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">173.245</span><span class="number">.58</span><span class="number">.108</span>: icmp_seq=<span class="number">0</span> ttl=<span class="number">50</span> time=<span class="number">171.777</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">173.245</span><span class="number">.58</span><span class="number">.108</span>: icmp_seq=<span class="number">1</span> ttl=<span class="number">50</span> time=<span class="number">631.591</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">173.245</span><span class="number">.58</span><span class="number">.108</span>: icmp_seq=<span class="number">2</span> ttl=<span class="number">50</span> time=<span class="number">664.854</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">173.245</span><span class="number">.58</span><span class="number">.108</span>: icmp_seq=<span class="number">3</span> ttl=<span class="number">50</span> time=<span class="number">501.809</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">173.245</span><span class="number">.58</span><span class="number">.108</span>: icmp_seq=<span class="number">4</span> ttl=<span class="number">50</span> time=<span class="number">166.118</span> ms</span><br><span class="line"><span class="number">64</span> bytes <span class="keyword">from</span> <span class="number">173.245</span><span class="number">.58</span><span class="number">.108</span>: icmp_seq=<span class="number">5</span> ttl=<span class="number">50</span> time=<span class="number">179.215</span> ms</span><br></pre></td></tr></table></figure>
+<p>比起30s+来说，这点儿损失不算什么<br>
+之后配置：缓存时间，压缩资源，https加密，添加page rules等，在分析入口观察缓存命中统计数据，都是控制台操作，非常友好</p>
+<h2 id="结果"><a class="markdownIt-Anchor" href="#结果"></a> 结果</h2>
+<p>直接用github国内测速结果:<br>
+<img src="/posts/b8500c7d/github_page_speed.png" alt="github_page_speed"><br>
+使用cloudflare加速后国内测试结果：<br>
+<img src="/posts/b8500c7d/cloudflare_speed.png" alt="cloudflare_speed"><br>
+不得不说还是有不少作用的，虽然服务器还是在国外，但只要「CDN」命中全部页面加载只要3s左右，目前发现的不足只有他家「CDN」节点太多，未命中时还是会抖动到30s+，不过总体已经比原来好很多了，感谢「Cloudflare」的支持~</p>
 
     </div>
 
@@ -363,7 +362,7 @@
     <strong>本文作者： </strong>Xsank</li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="/xsank.com/posts/408b7a09/" title="hadoop-metrics2源码分析">xsank.com/posts/408b7a09/</a>
+    <a href="/xsank.com/posts/b8500c7d/" title="使用cloudflare优化基于github的hexo博客访问速度">xsank.com/posts/b8500c7d/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！</li>
@@ -378,9 +377,13 @@
           
           <div class="post-tags">
             
-              <a href="/tags/源码分析/" rel="tag"># 源码分析</a>
+              <a href="/tags/经验/" rel="tag"># 经验</a>
             
-              <a href="/tags/hadoop-metrics2/" rel="tag"># hadoop-metrics2</a>
+              <a href="/tags/cloudflare/" rel="tag"># cloudflare</a>
+            
+              <a href="/tags/hexo/" rel="tag"># hexo</a>
+            
+              <a href="/tags/github/" rel="tag"># github</a>
             
           </div>
         
@@ -390,8 +393,8 @@
           <div class="post-nav">
             <div class="post-nav-next post-nav-item">
               
-                <a href="/posts/40a6ed4c/" rel="next" title="Html在线xpath测试小工具">
-                  <i class="fa fa-chevron-left"></i> Html在线xpath测试小工具
+                <a href="/posts/83ff057a/" rel="next" title="博客恢复">
+                  <i class="fa fa-chevron-left"></i> 博客恢复
                 </a>
               
             </div>
@@ -399,10 +402,6 @@
             <span class="post-nav-divider"></span>
 
             <div class="post-nav-prev post-nav-item">
-              
-                <a href="/posts/df1eb6a9/" rel="prev" title="如果你也不想用flume-client">
-                  如果你也不想用flume-client <i class="fa fa-chevron-right"></i>
-                </a>
               
             </div>
           </div>
@@ -451,7 +450,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#开题"><span class="nav-number">1.</span> <span class="nav-text"> 开题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码分析"><span class="nav-number">2.</span> <span class="nav-text"> 代码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#配置初始化"><span class="nav-number">2.1.</span> <span class="nav-text"> 配置初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#metrics生成"><span class="nav-number">2.2.</span> <span class="nav-text"> metrics生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#metrics投递"><span class="nav-number">2.3.</span> <span class="nav-text"> metrics投递</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text"> 总结</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#缘起"><span class="nav-number">1.</span> <span class="nav-text"> 缘起</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">2.</span> <span class="nav-text"> 分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#实操"><span class="nav-number">2.1.</span> <span class="nav-text"> 实操</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#阿里云cdn"><span class="nav-number">2.1.1.</span> <span class="nav-text"> 阿里云CDN</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#阿里云oss"><span class="nav-number">2.1.2.</span> <span class="nav-text"> 阿里云OSS</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#免备案cloudflare"><span class="nav-number">2.1.3.</span> <span class="nav-text"> 免备案Cloudflare</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结果"><span class="nav-number">3.</span> <span class="nav-text"> 结果</span></a></li></ol></div>
         
       </div>
       <!--/noindex-->
@@ -633,7 +632,7 @@
       repo: 'xsank.github.io',
       owner: 'xsank',
       admin: ['xsank'],
-      id: '708c8d024dbf346741926399e24f5e92',
+      id: 'cb9ad7351582c002a757c6fa9304ca62',
         language: 'zh-CN',
       
       distractionFreeMode: 'true'

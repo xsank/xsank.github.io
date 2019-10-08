@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="xsank.com/"/>
-  <updated>2019-10-07T09:44:05.628Z</updated>
+  <updated>2019-10-08T06:46:54.326Z</updated>
   <id>xsank.com/</id>
   
   <author>
@@ -15,6 +15,37 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>使用cloudflare优化基于github的hexo博客访问速度</title>
+    <link href="xsank.com/posts/b8500c7d/"/>
+    <id>xsank.com/posts/b8500c7d/</id>
+    <published>2019-10-08T06:11:44.000Z</published>
+    <updated>2019-10-08T06:46:54.326Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;缘起&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#缘起&quot;&gt;&lt;/a&gt; 缘起&lt;/h2&gt;&lt;p&gt;最近的「github」访问速度奇慢，导致「blog」也受了很大影响，页面完全刷新居然要30+s！虽然博客只是我个人记录的地方，但这个访问速度着实影响心情，是时候得优化一下了…&lt;/p&gt;&lt;h2 id=&quot;分析&quot;&gt;&lt;a class=&quot;markdownIt-Anchor&quot; href=&quot;#分析&quot;&gt;&lt;/a&gt; 分析&lt;/h2&gt;&lt;p&gt;先开启「chrome」，分析加载慢的原因&lt;/p&gt;&lt;ol&gt;
+&lt;li&gt;图片慢，要20s，只是一张300k的头像+&lt;/li&gt;
+&lt;li&gt;js慢，这个文件也比较多，不过大多都是几k而已&lt;/li&gt;
+&lt;li&gt;字体文件慢，一个75k的文件&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+    
+      <category term="工具" scheme="xsank.com/categories/%E5%B7%A5%E5%85%B7/"/>
+    
+    
+      <category term="经验" scheme="xsank.com/tags/%E7%BB%8F%E9%AA%8C/"/>
+    
+      <category term="cloudflare" scheme="xsank.com/tags/cloudflare/"/>
+    
+      <category term="hexo" scheme="xsank.com/tags/hexo/"/>
+    
+      <category term="github" scheme="xsank.com/tags/github/"/>
+    
+  </entry>
   
   <entry>
     <title>博客恢复</title>
@@ -345,9 +376,9 @@
       <category term="编程" scheme="xsank.com/categories/%E7%BC%96%E7%A8%8B/"/>
     
     
-      <category term="编程" scheme="xsank.com/tags/%E7%BC%96%E7%A8%8B/"/>
-    
       <category term="开源项目" scheme="xsank.com/tags/%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE/"/>
+    
+      <category term="编程" scheme="xsank.com/tags/%E7%BC%96%E7%A8%8B/"/>
     
   </entry>
   
