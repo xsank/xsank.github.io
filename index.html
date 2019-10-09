@@ -246,6 +246,98 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="xsank.com/posts/5f957c93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Xsank">
+      <meta itemprop="description" content="我一直在路上">
+      <meta itemprop="image" content="/images/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Xsank's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+            
+            <a href="/posts/5f957c93/" class="post-title-link" itemprop="url">python自动化测试简易封装</a>
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              
+                
+              
+
+              <time title="创建时间：2019-10-09 10:43:39 / 修改时间：11:16:51" itemprop="dateCreated datePublished" datetime="2019-10-09T10:43:39+08:00">2019-10-09</time>
+            </span>
+          
+            
+
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/编程/" itemprop="url" rel="index"><span itemprop="name">编程</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="背景"><a class="markdownIt-Anchor" href="#背景"></a> 背景</h2><p>工作中遇到一些类似责任链试的全链路测试场景，总是得临时写一些测试脚本，刚好觉得这种场景和「junit」的代码编写类似，于是考虑用「python」开发支持下</p><h2 id="细节说明"><a class="markdownIt-Anchor" href="#细节说明"></a> 细节说明</h2><h3 id="主体代码"><a class="markdownIt-Anchor" href="#主体代码"></a> 主体代码</h3><p>代码量很小，直接贴出来：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> traceback</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> inspect</span><br><span class="line"><span class="keyword">from</span> functools <span class="keyword">import</span> wraps</span><br><span class="line"></span><br><span class="line">AUTO_TEST_PREFIX = <span class="string">"autotest"</span></span><br><span class="line">SPLIT = <span class="string">"_"</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test</span><span class="params">(message=<span class="string">""</span>)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">decorate</span><span class="params">(func)</span>:</span></span><br><span class="line"><span class="meta">        @wraps(func)</span></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">wrapper</span><span class="params">(*args, **kwargs)</span>:</span></span><br><span class="line">            print(<span class="string">"-"</span> * <span class="number">80</span>)</span><br><span class="line">            start = time.time()</span><br><span class="line">            print(<span class="string">"start testing, api: %s"</span> % func.__name__)</span><br><span class="line">            print(<span class="string">"detail message: "</span>, message)</span><br><span class="line">            print(<span class="string">"="</span> * <span class="number">20</span> + <span class="string">"body start"</span> + <span class="string">"="</span> * <span class="number">20</span>)</span><br><span class="line">            res = func(*args, **kwargs)</span><br><span class="line">            print(<span class="string">"="</span> * <span class="number">20</span> + <span class="string">"body   end"</span> + <span class="string">"="</span> * <span class="number">20</span>)</span><br><span class="line">            print(<span class="string">"run cost: %fs"</span> % (time.time() - start))</span><br><span class="line">            <span class="keyword">return</span> res</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> wrapper</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> decorate</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">start</span><span class="params">(name)</span>:</span></span><br><span class="line">    mod = sys.modules[name]</span><br><span class="line">    <span class="keyword">if</span> mod:</span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">func_filter</span><span class="params">(func)</span>:</span></span><br><span class="line">            <span class="keyword">return</span> SPLIT <span class="keyword">in</span> func.__name__ <span class="keyword">and</span> func.__name__.startswith(AUTO_TEST_PREFIX)</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">def</span> <span class="title">func_sort</span><span class="params">(func)</span>:</span></span><br><span class="line">            pairs = func.__name__.split(SPLIT)</span><br><span class="line">            <span class="keyword">if</span> len(pairs) == <span class="number">2</span>:</span><br><span class="line">                <span class="keyword">return</span> int(pairs[<span class="number">1</span>])</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line">        funcs = inspect.getmembers(mod, inspect.isfunction)</span><br><span class="line">        funcs = [func[<span class="number">1</span>] <span class="keyword">for</span> func <span class="keyword">in</span> funcs <span class="keyword">if</span> func_filter(func[<span class="number">1</span>])]</span><br><span class="line">        <span class="keyword">for</span> func <span class="keyword">in</span> sorted(funcs, key=func_sort):</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                res = func()</span><br><span class="line">                <span class="keyword">if</span> type(res) <span class="keyword">is</span> bool:</span><br><span class="line">                    <span class="keyword">if</span> <span class="keyword">not</span> res:</span><br><span class="line">                        print(<span class="string">"error: api %s run failed!"</span> % func.__name__)</span><br><span class="line">                        <span class="keyword">break</span></span><br><span class="line">                    <span class="keyword">else</span>:</span><br><span class="line">                        print(<span class="string">"info: api %s run success!"</span> % func.__name__)</span><br><span class="line">                <span class="keyword">elif</span> <span class="keyword">not</span> res:</span><br><span class="line">                    print(<span class="string">"warn: api %s with no return, you may need to check."</span> % func.__name__)</span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    print(<span class="string">"info: api %s run with result:%s"</span> % (func.__name__, str(res)))</span><br><span class="line">            <span class="keyword">except</span> Exception:</span><br><span class="line">                traceback.print_exc()</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            <span class="keyword">finally</span>:</span><br><span class="line">                print(<span class="string">"\n\n"</span>)</span><br></pre></td></tr></table></figure>
+          <!--noindex-->
+          
+            <div class="post-button">
+              <a class="btn" href="/posts/5f957c93/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+          <div class="post-eof"></div>
+        
+      </footer>
+  </article>
+  
+  
+  
+
+    
+        
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="xsank.com/posts/b8500c7d/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1146,106 +1238,6 @@
   
 
     
-        
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block home" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="xsank.com/posts/408b7a09/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Xsank">
-      <meta itemprop="description" content="我一直在路上">
-      <meta itemprop="image" content="/images/avatar.png">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Xsank's blog">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-            
-            <a href="/posts/408b7a09/" class="post-title-link" itemprop="url">hadoop-metrics2源码分析</a>
-          
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              
-                
-              
-
-              <time title="创建时间：2017-01-08 12:35:08" itemprop="dateCreated datePublished" datetime="2017-01-08T12:35:08+08:00">2017-01-08</time>
-            </span>
-          
-            
-
-            
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2019-10-07 14:55:41" itemprop="dateModified" datetime="2019-10-07T14:55:41+08:00">2019-10-07</time>
-              </span>
-            
-          
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/编程/" itemprop="url" rel="index"><span itemprop="name">编程</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="开题"><a class="markdownIt-Anchor" href="#开题"></a> 开题</h2><p><code>hadoop-metrics2</code>其实是<code>hadoop-common</code>工具包中的一个小模块，它设计了一个完整的metrics使用方案，工作中正好用到了，这里从代码层面分析下其设计思路，并不会贴大段大段的代码</p><h2 id="代码分析"><a class="markdownIt-Anchor" href="#代码分析"></a> 代码分析</h2><p><code>hadoop-metrics2</code>的整个流程都被封装到了<code>MetricsSystem</code>中，随着这个类的启动，配置初始化-&gt;metrics生成-&gt;metrics投递的整个链路就串通了。</p>
-          <!--noindex-->
-          
-            <div class="post-button">
-              <a class="btn" href="/posts/408b7a09/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-          <div class="post-eof"></div>
-        
-      </footer>
-  </article>
-  
-  
-  
-
-    
   </div>
 
   
@@ -1298,7 +1290,7 @@
         
           <a href="/archives/">
         
-          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-count">15</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1324,7 +1316,7 @@
             <a href="/tags/">
           
         
-        <span class="site-state-item-count">23</span>
+        <span class="site-state-item-count">25</span>
         <span class="site-state-item-name">标签</span>
         </a>
       </div>

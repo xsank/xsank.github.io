@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title><![CDATA[python自动化测试简易封装]]></title>
+    <url>%2Fposts%2F5f957c93%2F</url>
+    <content type="text"><![CDATA[背景工作中遇到一些类似责任链试的全链路测试场景，总是得临时写一些测试脚本，刚好觉得这种场景和「junit」的代码编写类似，于是考虑用「python」开发支持下 细节说明 主体代码代码量很小，直接贴出来：12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061import sysimport tracebackimport timeimport inspectfrom functools import wrapsAUTO_TEST_PREFIX = "autotest"SPLIT = "_"def test(message=""): def decorate(func): @wraps(func) def wrapper(*args, **kwargs): print("-" * 80) start = time.time() print("start testing, api: %s" % func.__name__) print("detail message: ", message) print("=" * 20 + "body start" + "=" * 20) res = func(*args, **kwargs) print("=" * 20 + "body end" + "=" * 20) print("run cost: %fs" % (time.time() - start)) return res return wrapper return decoratedef start(name): mod = sys.modules[name] if mod: def func_filter(func): return SPLIT in func.__name__ and func.__name__.startswith(AUTO_TEST_PREFIX) def func_sort(func): pairs = func.__name__.split(SPLIT) if len(pairs) == 2: return int(pairs[1]) return 0 funcs = inspect.getmembers(mod, inspect.isfunction) funcs = [func[1] for func in funcs if func_filter(func[1])] for func in sorted(funcs, key=func_sort): try: res = func() if type(res) is bool: if not res: print("error: api %s run failed!" % func.__name__) break else: print("info: api %s run success!" % func.__name__) elif not res: print("warn: api %s with no return, you may need to check." % func.__name__) else: print("info: api %s run with result:%s" % (func.__name__, str(res))) except Exception: traceback.print_exc() break finally: print("\n\n") 其实就是利用装饰器，黑盒处理了自动化测试的流程 用法 引入两个主题代码的两个「func」，「test」类似「junit」的注释，「start」为执行入口 此外可以简单对「func」添加下接口说明，便于理解接口功能，在自动化测试时方便快速定位 from auto_test import test from auto_test import start @test(message="login") def autotest_0(): print("process about login") @test(message="create instance") def autotest_1(): print("process about create") return True @test(message="config") def autotest_2(): print("process about config") return False @test(message="destroy instance") def autotest_3(): print("process about destroy") start(__name__) 查看执行结果: -------------------------------------------------------------------------------- start testing, api: autotest_0 detail message: login ====================body start==================== process about login ====================body end==================== run cost: 0.000025s warn: api autotest_0 with no return, you may need to check. -------------------------------------------------------------------------------- start testing, api: autotest_1 detail message: create instance ====================body start==================== process about create ====================body end==================== run cost: 0.000022s info: api autotest_1 run success! -------------------------------------------------------------------------------- start testing, api: autotest_2 detail message: config ====================body start==================== process about config ====================body end==================== run cost: 0.000020s error: api autotest_2 run failed! 按照接口顺序额打印出了各个接口的信息，执行耗时以及接口的输出 整个测试链路仅执行prefix为「autotest」的「func」,执行顺序按照subfix的编号，当且仅当该「func」执行不抛异常且执行结果不为「false」时才会继续流转 再针对具体的工作场景，沉淀一些「tools」,「utils」包，后面就交给他人填充「case」就好了，干净整洁]]></content>
+      <categories>
+        <category>编程</category>
+      </categories>
+      <tags>
+        <tag>python</tag>
+        <tag>测试</tag>
+      </tags>
+  </entry>
+  <entry>
     <title><![CDATA[使用cloudflare优化基于github的hexo博客访问速度]]></title>
     <url>%2Fposts%2Fb8500c7d%2F</url>
     <content type="text"><![CDATA[缘起最近的「github」访问速度奇慢，导致「blog」也受了很大影响，页面完全刷新居然要30+s！虽然博客只是我个人记录的地方，但这个访问速度着实影响心情，是时候得优化一下了… 分析先开启「chrome」，分析加载慢的原因 图片慢，要20s，只是一张300k的头像+ js慢，这个文件也比较多，不过大多都是几k而已 字体文件慢，一个75k的文件 看起来也就是静态文件需要加速而已，那么首选就是CDN了 实操 阿里云CDN 由于域名是在「阿里云」上买的，自然也就不打算换了，本以为会很简单，但不想头疼的问题来了 要申请使用CDN必须要「ICP备案」，要备案必须要「备案服务号」，要备案服务号必须要购买「虚机」… 讲道理，当初选择「github page」就是懒得管虚机，你这不坑我么 顺便尝试了其他CDN都需要备案，而「ICP备案」系统已经被「阿里云」收了，好吧，你厉害，我换个其他法子 阿里云OSS 不是打广告，只是觉得一个地方管理方便，顺带想到了「OSS」。把图片上传后下载发现速度确实挺快，后面改下图片引用地址就好了嘛! 可是刚准备写篇文章记录下才发现其实这样很不方便，每次倒腾资源文件都得上传一遍「OSS」，就算写个脚本感觉也不清爽… 免备案Cloudflare 翻了半天资料，国内的CDN都要备案，而备案都要买国内的主机，好吧，那只能使用国际的CDN了 对于个人博客来说基本是免费的，而且使用很方便，只要求把「DNS」换成他家的，剩下的全在「console」上配置 先来「ping」下「DNS Server」 阿里云： 1234567PING dns9.hichina.com (106.11.141.125): 56 data bytes64 bytes from 106.11.141.125: icmp_seq=0 ttl=54 time=29.700 ms64 bytes from 106.11.141.125: icmp_seq=1 ttl=54 time=29.035 ms64 bytes from 106.11.141.125: icmp_seq=2 ttl=54 time=29.366 ms64 bytes from 106.11.141.125: icmp_seq=3 ttl=54 time=625.300 ms64 bytes from 106.11.141.125: icmp_seq=4 ttl=54 time=476.028 ms64 bytes from 106.11.141.125: icmp_seq=5 ttl=54 time=28.828 ms Cloudflare： 1234567PING dora.ns.cloudflare.com (173.245.58.108): 56 data bytes64 bytes from 173.245.58.108: icmp_seq=0 ttl=50 time=171.777 ms64 bytes from 173.245.58.108: icmp_seq=1 ttl=50 time=631.591 ms64 bytes from 173.245.58.108: icmp_seq=2 ttl=50 time=664.854 ms64 bytes from 173.245.58.108: icmp_seq=3 ttl=50 time=501.809 ms64 bytes from 173.245.58.108: icmp_seq=4 ttl=50 time=166.118 ms64 bytes from 173.245.58.108: icmp_seq=5 ttl=50 time=179.215 ms 比起30s+来说，这点儿损失不算什么 之后配置：缓存时间，压缩资源，https加密，添加page rules等，在分析入口观察缓存命中统计数据，都是控制台操作，非常友好 结果 直接用github国内测速结果: 使用cloudflare加速后国内测试结果： 不得不说还是有不少作用的，虽然服务器还是在国外，但只要「CDN」命中全部页面加载只要3s左右，目前发现的不足只有他家「CDN」节点太多，未命中时还是会抖动到30s+，不过总体已经比原来好很多了，感谢「Cloudflare」的支持~]]></content>
@@ -166,8 +178,8 @@
         <category>编程</category>
       </categories>
       <tags>
-        <tag>开源项目</tag>
         <tag>编程</tag>
+        <tag>开源项目</tag>
       </tags>
   </entry>
 </search>
